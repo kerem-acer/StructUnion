@@ -25,11 +25,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct MyShape : global::System.IEquatable<MyShape>
 {
-    private const byte TagCircle = 1;
-    private const byte TagSquare = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Circle = 1,
+        Square = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly double _circle_Radius;
@@ -43,7 +47,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     public static MyShape Circle(double radius)
     {
         var result = default(MyShape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagCircle;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Circle;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._circle_Radius) = radius;
         return result;
     }
@@ -51,25 +55,25 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     public static MyShape Square(double side)
     {
         var result = default(MyShape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagSquare;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Square;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._square_Side) = side;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsCircle => _tag == TagCircle;
-    public bool IsSquare => _tag == TagSquare;
+    public bool IsCircle => _tag == Tags.Circle;
+    public bool IsSquare => _tag == Tags.Square;
 
     public double CircleRadius
     {
         get
         {
-            if (_tag != TagCircle) ThrowInvalidCase(nameof(Circle));
+            if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
             return _circle_Radius;
         }
     }
@@ -77,14 +81,14 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     {
         get
         {
-            if (_tag != TagSquare) ThrowInvalidCase(nameof(Square));
+            if (_tag != Tags.Square) ThrowInvalidCase(nameof(Square));
             return _square_Side;
         }
     }
 
     public bool TryGetCircle(out double Radius)
     {
-        if (_tag == TagCircle)
+        if (_tag == Tags.Circle)
         {
             Radius = _circle_Radius;
             return true;
@@ -96,7 +100,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
 
     public bool TryGetSquare(out double Side)
     {
-        if (_tag == TagSquare)
+        if (_tag == Tags.Square)
         {
             Side = _square_Side;
             return true;
@@ -110,8 +114,8 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     {
         return _tag switch
         {
-            TagCircle => circle(_circle_Radius),
-            TagSquare => square(_square_Side),
+            Tags.Circle => circle(_circle_Radius),
+            Tags.Square => square(_square_Side),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -120,8 +124,8 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     {
         switch (_tag)
         {
-            case TagCircle: circle(_circle_Radius); break;
-            case TagSquare: square(_square_Side); break;
+            case Tags.Circle: circle(_circle_Radius); break;
+            case Tags.Square: square(_square_Side); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -131,8 +135,8 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagCircle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),
-            TagSquare => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_square_Side, other._square_Side),
+            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),
+            Tags.Square => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_square_Side, other._square_Side),
             _ => true
         };
     }
@@ -143,8 +147,8 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     {
         return _tag switch
         {
-            TagCircle => global::System.HashCode.Combine(_tag, _circle_Radius),
-            TagSquare => global::System.HashCode.Combine(_tag, _square_Side),
+            Tags.Circle => global::System.HashCode.Combine(_tag, _circle_Radius),
+            Tags.Square => global::System.HashCode.Combine(_tag, _square_Side),
             _ => _tag.GetHashCode()
         };
     }
@@ -156,8 +160,8 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     {
         return _tag switch
         {
-            TagCircle => $"Circle({_circle_Radius})",
-            TagSquare => $"Square({_square_Side})",
+            Tags.Circle => $"Circle({_circle_Radius})",
+            Tags.Square => $"Square({_square_Side})",
             _ => "<invalid>"
         };
     }

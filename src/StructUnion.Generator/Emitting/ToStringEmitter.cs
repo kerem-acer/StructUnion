@@ -18,7 +18,7 @@ static class ToStringEmitter
             {
                 if (variant.Parameters.Count == 0)
                 {
-                    sb.AppendLine($"Tag{variant.Name} => \"{variant.Name}\",");
+                    sb.AppendLine($"Tags.{variant.Name} => \"{variant.Name}\",");
                     continue;
                 }
 
@@ -27,7 +27,7 @@ static class ToStringEmitter
                     var field = model.VariantField(variant.Name, p.Name);
                     return $"{{{field}}}";
                 });
-                sb.AppendLine($"Tag{variant.Name} => $\"{variant.Name}({string.Join(", ", parts)})\",");
+                sb.AppendLine($"Tags.{variant.Name} => $\"{variant.Name}({string.Join(", ", parts)})\",");
             }
             sb.AppendLine("_ => \"<invalid>\"");
             sb.CloseBraceNoNewline();

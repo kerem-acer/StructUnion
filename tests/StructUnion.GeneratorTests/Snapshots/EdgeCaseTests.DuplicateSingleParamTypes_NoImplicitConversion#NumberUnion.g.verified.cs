@@ -25,11 +25,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct NumberUnion : global::System.IEquatable<NumberUnion>
 {
-    private const byte TagCelsius = 1;
-    private const byte TagFahrenheit = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Celsius = 1,
+        Fahrenheit = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly double _celsius_value;
@@ -43,7 +47,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     public static partial NumberUnion Celsius(double value)
     {
         var result = default(NumberUnion);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagCelsius;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Celsius;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._celsius_value) = value;
         return result;
     }
@@ -51,25 +55,25 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     public static partial NumberUnion Fahrenheit(double value)
     {
         var result = default(NumberUnion);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagFahrenheit;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Fahrenheit;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._fahrenheit_value) = value;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsCelsius => _tag == TagCelsius;
-    public bool IsFahrenheit => _tag == TagFahrenheit;
+    public bool IsCelsius => _tag == Tags.Celsius;
+    public bool IsFahrenheit => _tag == Tags.Fahrenheit;
 
     public double CelsiusValue
     {
         get
         {
-            if (_tag != TagCelsius) ThrowInvalidCase(nameof(Celsius));
+            if (_tag != Tags.Celsius) ThrowInvalidCase(nameof(Celsius));
             return _celsius_value;
         }
     }
@@ -77,14 +81,14 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     {
         get
         {
-            if (_tag != TagFahrenheit) ThrowInvalidCase(nameof(Fahrenheit));
+            if (_tag != Tags.Fahrenheit) ThrowInvalidCase(nameof(Fahrenheit));
             return _fahrenheit_value;
         }
     }
 
     public bool TryGetCelsius(out double value)
     {
-        if (_tag == TagCelsius)
+        if (_tag == Tags.Celsius)
         {
             value = _celsius_value;
             return true;
@@ -96,7 +100,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
 
     public bool TryGetFahrenheit(out double value)
     {
-        if (_tag == TagFahrenheit)
+        if (_tag == Tags.Fahrenheit)
         {
             value = _fahrenheit_value;
             return true;
@@ -110,8 +114,8 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     {
         return _tag switch
         {
-            TagCelsius => celsius(_celsius_value),
-            TagFahrenheit => fahrenheit(_fahrenheit_value),
+            Tags.Celsius => celsius(_celsius_value),
+            Tags.Fahrenheit => fahrenheit(_fahrenheit_value),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -120,8 +124,8 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     {
         switch (_tag)
         {
-            case TagCelsius: celsius(_celsius_value); break;
-            case TagFahrenheit: fahrenheit(_fahrenheit_value); break;
+            case Tags.Celsius: celsius(_celsius_value); break;
+            case Tags.Fahrenheit: fahrenheit(_fahrenheit_value); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -131,8 +135,8 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagCelsius => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_celsius_value, other._celsius_value),
-            TagFahrenheit => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_fahrenheit_value, other._fahrenheit_value),
+            Tags.Celsius => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_celsius_value, other._celsius_value),
+            Tags.Fahrenheit => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_fahrenheit_value, other._fahrenheit_value),
             _ => true
         };
     }
@@ -143,8 +147,8 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     {
         return _tag switch
         {
-            TagCelsius => global::System.HashCode.Combine(_tag, _celsius_value),
-            TagFahrenheit => global::System.HashCode.Combine(_tag, _fahrenheit_value),
+            Tags.Celsius => global::System.HashCode.Combine(_tag, _celsius_value),
+            Tags.Fahrenheit => global::System.HashCode.Combine(_tag, _fahrenheit_value),
             _ => _tag.GetHashCode()
         };
     }
@@ -156,8 +160,8 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     {
         return _tag switch
         {
-            TagCelsius => $"Celsius({_celsius_value})",
-            TagFahrenheit => $"Fahrenheit({_fahrenheit_value})",
+            Tags.Celsius => $"Celsius({_celsius_value})",
+            Tags.Fahrenheit => $"Fahrenheit({_fahrenheit_value})",
             _ => "<invalid>"
         };
     }

@@ -28,12 +28,16 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Payload : global::System.IEquatable<Payload>
 {
-    private const byte TagText = 1;
-    private const byte TagNumber = 2;
-    private const byte TagBoth = 3;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Text = 1,
+        Number = 2,
+        Both = 3,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly string _text_Value;
@@ -53,7 +57,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     public static Payload Text(string value)
     {
         var result = default(Payload);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagText;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Text;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._text_Value) = value;
         return result;
     }
@@ -61,7 +65,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     public static Payload Number(int value)
     {
         var result = default(Payload);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagNumber;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Number;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._number_Value) = value;
         return result;
     }
@@ -69,27 +73,27 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     public static Payload Both(string name, int age)
     {
         var result = default(Payload);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagBoth;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Both;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._both_Name) = name;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._both_Age) = age;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsText => _tag == TagText;
-    public bool IsNumber => _tag == TagNumber;
-    public bool IsBoth => _tag == TagBoth;
+    public bool IsText => _tag == Tags.Text;
+    public bool IsNumber => _tag == Tags.Number;
+    public bool IsBoth => _tag == Tags.Both;
 
     public string TextValue
     {
         get
         {
-            if (_tag != TagText) ThrowInvalidCase(nameof(Text));
+            if (_tag != Tags.Text) ThrowInvalidCase(nameof(Text));
             return _text_Value;
         }
     }
@@ -97,7 +101,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         get
         {
-            if (_tag != TagNumber) ThrowInvalidCase(nameof(Number));
+            if (_tag != Tags.Number) ThrowInvalidCase(nameof(Number));
             return _number_Value;
         }
     }
@@ -105,7 +109,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         get
         {
-            if (_tag != TagBoth) ThrowInvalidCase(nameof(Both));
+            if (_tag != Tags.Both) ThrowInvalidCase(nameof(Both));
             return _both_Name;
         }
     }
@@ -113,14 +117,14 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         get
         {
-            if (_tag != TagBoth) ThrowInvalidCase(nameof(Both));
+            if (_tag != Tags.Both) ThrowInvalidCase(nameof(Both));
             return _both_Age;
         }
     }
 
     public bool TryGetText(out string Value)
     {
-        if (_tag == TagText)
+        if (_tag == Tags.Text)
         {
             Value = _text_Value;
             return true;
@@ -132,7 +136,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
 
     public bool TryGetNumber(out int Value)
     {
-        if (_tag == TagNumber)
+        if (_tag == Tags.Number)
         {
             Value = _number_Value;
             return true;
@@ -144,7 +148,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
 
     public bool TryGetBoth(out string Name, out int Age)
     {
-        if (_tag == TagBoth)
+        if (_tag == Tags.Both)
         {
             Name = _both_Name;
             Age = _both_Age;
@@ -160,9 +164,9 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         return _tag switch
         {
-            TagText => text(_text_Value),
-            TagNumber => number(_number_Value),
-            TagBoth => both(_both_Name, _both_Age),
+            Tags.Text => text(_text_Value),
+            Tags.Number => number(_number_Value),
+            Tags.Both => both(_both_Name, _both_Age),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -171,9 +175,9 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         switch (_tag)
         {
-            case TagText: text(_text_Value); break;
-            case TagNumber: number(_number_Value); break;
-            case TagBoth: both(_both_Name, _both_Age); break;
+            case Tags.Text: text(_text_Value); break;
+            case Tags.Number: number(_number_Value); break;
+            case Tags.Both: both(_both_Name, _both_Age); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -186,9 +190,9 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagText => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_text_Value, other._text_Value),
-            TagNumber => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_number_Value, other._number_Value),
-            TagBoth => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_both_Name, other._both_Name) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_both_Age, other._both_Age),
+            Tags.Text => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_text_Value, other._text_Value),
+            Tags.Number => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_number_Value, other._number_Value),
+            Tags.Both => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_both_Name, other._both_Name) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_both_Age, other._both_Age),
             _ => true
         };
     }
@@ -199,9 +203,9 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         return _tag switch
         {
-            TagText => global::System.HashCode.Combine(_tag, _text_Value),
-            TagNumber => global::System.HashCode.Combine(_tag, _number_Value),
-            TagBoth => global::System.HashCode.Combine(_tag, _both_Name, _both_Age),
+            Tags.Text => global::System.HashCode.Combine(_tag, _text_Value),
+            Tags.Number => global::System.HashCode.Combine(_tag, _number_Value),
+            Tags.Both => global::System.HashCode.Combine(_tag, _both_Name, _both_Age),
             _ => _tag.GetHashCode()
         };
     }
@@ -213,9 +217,9 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     {
         return _tag switch
         {
-            TagText => $"Text({_text_Value})",
-            TagNumber => $"Number({_number_Value})",
-            TagBoth => $"Both({_both_Name}, {_both_Age})",
+            Tags.Text => $"Text({_text_Value})",
+            Tags.Number => $"Number({_number_Value})",
+            Tags.Both => $"Both({_both_Name}, {_both_Age})",
             _ => "<invalid>"
         };
     }

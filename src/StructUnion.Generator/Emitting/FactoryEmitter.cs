@@ -42,7 +42,7 @@ static class FactoryEmitter
         using (sb.Block())
         {
             sb.AppendLine($"var result = default({model.TypeNameWithParameters});");
-            sb.AppendLine($"global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tag{variant.Name};");
+            sb.AppendLine($"global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.{variant.Name};");
 
             if (model.Mode == GenerationMode.RecordTemplate)
             {

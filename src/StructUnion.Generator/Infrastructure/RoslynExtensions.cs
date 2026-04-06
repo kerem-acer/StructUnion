@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using StructUnion;
 using StructUnion.Generator.Models;
 
 namespace StructUnion.Generator.Infrastructure;
@@ -78,50 +79,82 @@ static class RoslynExtensions
         return result.ToImmutable().ToEquatableArray();
     }
 
-    public static (bool EnableImplicit, string? ExplicitName) GetStructUnionAttributeProps(
-        this GeneratorAttributeSyntaxContext ctx)
+    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix)
+        GetStructUnionAttributeProps(this GeneratorAttributeSyntaxContext ctx)
     {
-        var enableImplicit = true;
-        string? explicitName = null;
+        bool? enableImplicit = null;
+        string? generatedName = null;
+        string? tagPropertyName = null;
+        bool? nestedAccessors = null;
+        string? suffix = null;
 
         foreach (var attr in ctx.Attributes)
         {
             if (attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string name)
             {
-                explicitName = name;
+                generatedName = name;
             }
 
             foreach (var named in attr.NamedArguments)
             {
-                if (named.Key == "EnableImplicitConversions" && named.Value.Value is bool val)
+                switch (named.Key)
                 {
-                    enableImplicit = val;
+                    case nameof(StructUnionAttribute.EnableImplicitConversions) when named.Value.Value is bool val:
+                        enableImplicit = val;
+                        break;
+                    case nameof(StructUnionAttribute.TagPropertyName) when named.Value.Value is string tagName:
+                        tagPropertyName = tagName;
+                        break;
+                    case nameof(StructUnionAttribute.NestedAccessors) when named.Value.Value is bool nested:
+                        nestedAccessors = nested;
+                        break;
+                    case nameof(StructUnionAttribute.TemplateSuffix) when named.Value.Value is string s:
+                        suffix = s;
+                        break;
                 }
             }
         }
 
-        return (enableImplicit, explicitName);
+        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix);
     }
 
     /// <summary>
-    /// Reads the RecordSuffix from [assembly: StructUnionSettings] if present.
+    /// Reads assembly-level options from [assembly: StructUnionOptions].
+    /// Returns null for properties not explicitly set by the user.
     /// </summary>
-    public static string GetRecordSuffix(this Compilation compilation)
+    public static (string? TagPropertyName, string? TemplateSuffix, bool? EnableImplicit, bool? NestedAccessors)
+        GetAssemblyOptions(this Compilation compilation)
     {
+        string? tagPropertyName = null;
+        string? templateSuffix = null;
+        bool? enableImplicit = null;
+        bool? nestedAccessors = null;
+
         foreach (var attr in compilation.Assembly.GetAttributes())
         {
-            if (attr.AttributeClass?.ToDisplayString() == "StructUnion.StructUnionSettingsAttribute")
+            if (attr.AttributeClass?.ToDisplayString() == typeof(StructUnionOptionsAttribute).FullName!)
             {
                 foreach (var named in attr.NamedArguments)
                 {
-                    if (named.Key == "RecordSuffix" && named.Value.Value is string suffix)
+                    switch (named.Key)
                     {
-                        return suffix;
+                        case nameof(StructUnionOptionsAttribute.TagPropertyName) when named.Value.Value is string tagName:
+                            tagPropertyName = tagName;
+                            break;
+                        case nameof(StructUnionOptionsAttribute.TemplateSuffix) when named.Value.Value is string suffix:
+                            templateSuffix = suffix;
+                            break;
+                        case nameof(StructUnionOptionsAttribute.EnableImplicitConversions) when named.Value.Value is bool val:
+                            enableImplicit = val;
+                            break;
+                        case nameof(StructUnionOptionsAttribute.NestedAccessors) when named.Value.Value is bool nested:
+                            nestedAccessors = nested;
+                            break;
                     }
                 }
             }
         }
 
-        return Parsing.NamingConventions.DefaultRecordSuffix;
+        return (tagPropertyName, templateSuffix, enableImplicit, nestedAccessors);
     }
 }

@@ -27,11 +27,15 @@ partial class Outer
     [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
     public readonly partial struct Inner : global::System.IEquatable<Inner>
     {
-        private const byte TagA = 1;
-        private const byte TagB = 2;
+        public enum Tags : byte
+        {
+            Default = 0,
+            A = 1,
+            B = 2,
+        }
 
         [global::System.Runtime.InteropServices.FieldOffset(0)]
-        private readonly byte _tag;
+        private readonly Tags _tag;
 
         [global::System.Runtime.InteropServices.FieldOffset(4)]
         private readonly int _a_x;
@@ -45,7 +49,7 @@ partial class Outer
         public static partial Inner A(int x)
         {
             var result = default(Inner);
-            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagA;
+            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.A;
             global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._a_x) = x;
             return result;
         }
@@ -53,25 +57,25 @@ partial class Outer
         public static partial Inner B(int y)
         {
             var result = default(Inner);
-            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagB;
+            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.B;
             global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._b_y) = y;
             return result;
         }
 
         /// <summary>Gets the tag value identifying which variant is active.</summary>
-        public byte Tag => _tag;
+        public Tags Tag => _tag;
 
         /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-        public bool IsDefault => _tag == 0;
+        public bool IsDefault => _tag == Tags.Default;
 
-        public bool IsA => _tag == TagA;
-        public bool IsB => _tag == TagB;
+        public bool IsA => _tag == Tags.A;
+        public bool IsB => _tag == Tags.B;
 
         public int AX
         {
             get
             {
-                if (_tag != TagA) ThrowInvalidCase(nameof(A));
+                if (_tag != Tags.A) ThrowInvalidCase(nameof(A));
                 return _a_x;
             }
         }
@@ -79,14 +83,14 @@ partial class Outer
         {
             get
             {
-                if (_tag != TagB) ThrowInvalidCase(nameof(B));
+                if (_tag != Tags.B) ThrowInvalidCase(nameof(B));
                 return _b_y;
             }
         }
 
         public bool TryGetA(out int x)
         {
-            if (_tag == TagA)
+            if (_tag == Tags.A)
             {
                 x = _a_x;
                 return true;
@@ -98,7 +102,7 @@ partial class Outer
 
         public bool TryGetB(out int y)
         {
-            if (_tag == TagB)
+            if (_tag == Tags.B)
             {
                 y = _b_y;
                 return true;
@@ -112,8 +116,8 @@ partial class Outer
         {
             return _tag switch
             {
-                TagA => a(_a_x),
-                TagB => b(_b_y),
+                Tags.A => a(_a_x),
+                Tags.B => b(_b_y),
                 _ => ThrowUnknownTag<TResult>()
             };
         }
@@ -122,8 +126,8 @@ partial class Outer
         {
             switch (_tag)
             {
-                case TagA: a(_a_x); break;
-                case TagB: b(_b_y); break;
+                case Tags.A: a(_a_x); break;
+                case Tags.B: b(_b_y); break;
                 default: ThrowUnknownTag<int>(); break;
             }
         }
@@ -133,8 +137,8 @@ partial class Outer
             if (_tag != other._tag) return false;
             return _tag switch
             {
-                TagA => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_a_x, other._a_x),
-                TagB => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_b_y, other._b_y),
+                Tags.A => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_a_x, other._a_x),
+                Tags.B => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_b_y, other._b_y),
                 _ => true
             };
         }
@@ -145,8 +149,8 @@ partial class Outer
         {
             return _tag switch
             {
-                TagA => global::System.HashCode.Combine(_tag, _a_x),
-                TagB => global::System.HashCode.Combine(_tag, _b_y),
+                Tags.A => global::System.HashCode.Combine(_tag, _a_x),
+                Tags.B => global::System.HashCode.Combine(_tag, _b_y),
                 _ => _tag.GetHashCode()
             };
         }
@@ -158,8 +162,8 @@ partial class Outer
         {
             return _tag switch
             {
-                TagA => $"A({_a_x})",
-                TagB => $"B({_b_y})",
+                Tags.A => $"A({_a_x})",
+                Tags.B => $"B({_b_y})",
                 _ => "<invalid>"
             };
         }

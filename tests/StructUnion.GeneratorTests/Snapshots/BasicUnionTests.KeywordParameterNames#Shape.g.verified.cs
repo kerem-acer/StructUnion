@@ -24,10 +24,14 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Shape : global::System.IEquatable<Shape>
 {
-    private const byte TagTriangle = 1;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Triangle = 1,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly double _triangle_base;
@@ -41,25 +45,25 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     public static partial Shape Triangle(double @base, double height)
     {
         var result = default(Shape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagTriangle;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Triangle;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._triangle_base) = @base;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._triangle_height) = height;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsTriangle => _tag == TagTriangle;
+    public bool IsTriangle => _tag == Tags.Triangle;
 
     public double TriangleBase
     {
         get
         {
-            if (_tag != TagTriangle) ThrowInvalidCase(nameof(Triangle));
+            if (_tag != Tags.Triangle) ThrowInvalidCase(nameof(Triangle));
             return _triangle_base;
         }
     }
@@ -67,14 +71,14 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         get
         {
-            if (_tag != TagTriangle) ThrowInvalidCase(nameof(Triangle));
+            if (_tag != Tags.Triangle) ThrowInvalidCase(nameof(Triangle));
             return _triangle_height;
         }
     }
 
     public bool TryGetTriangle(out double @base, out double height)
     {
-        if (_tag == TagTriangle)
+        if (_tag == Tags.Triangle)
         {
             @base = _triangle_base;
             height = _triangle_height;
@@ -90,7 +94,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         return _tag switch
         {
-            TagTriangle => triangle(_triangle_base, _triangle_height),
+            Tags.Triangle => triangle(_triangle_base, _triangle_height),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -99,7 +103,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         switch (_tag)
         {
-            case TagTriangle: triangle(_triangle_base, _triangle_height); break;
+            case Tags.Triangle: triangle(_triangle_base, _triangle_height); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -109,7 +113,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagTriangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_triangle_base, other._triangle_base) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_triangle_height, other._triangle_height),
+            Tags.Triangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_triangle_base, other._triangle_base) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_triangle_height, other._triangle_height),
             _ => true
         };
     }
@@ -120,7 +124,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         return _tag switch
         {
-            TagTriangle => global::System.HashCode.Combine(_tag, _triangle_base, _triangle_height),
+            Tags.Triangle => global::System.HashCode.Combine(_tag, _triangle_base, _triangle_height),
             _ => _tag.GetHashCode()
         };
     }
@@ -132,7 +136,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         return _tag switch
         {
-            TagTriangle => $"Triangle({_triangle_base}, {_triangle_height})",
+            Tags.Triangle => $"Triangle({_triangle_base}, {_triangle_height})",
             _ => "<invalid>"
         };
     }

@@ -28,7 +28,7 @@ static class EqualityEmitter
             {
                 if (variant.Parameters.Count == 0)
                 {
-                    sb.AppendLine($"Tag{variant.Name} => true,");
+                    sb.AppendLine($"Tags.{variant.Name} => true,");
                     continue;
                 }
 
@@ -37,7 +37,7 @@ static class EqualityEmitter
                     var fn = model.VariantField(variant.Name, p.Name);
                     return $"global::System.Collections.Generic.EqualityComparer<{p.TypeFullyQualified}>.Default.Equals({fn}, other.{fn})";
                 });
-                sb.AppendLine($"Tag{variant.Name} => {string.Join(" && ", comparisons)},");
+                sb.AppendLine($"Tags.{variant.Name} => {string.Join(" && ", comparisons)},");
             }
             sb.AppendLine("_ => true");
             sb.CloseBraceNoNewline();
@@ -83,7 +83,7 @@ static class EqualityEmitter
                             continue;
                         }
 
-                        sb.AppendLine($"case Tag{variant.Name}:");
+                        sb.AppendLine($"case Tags.{variant.Name}:");
                         using (sb.Indent())
                         {
                             foreach (var param in variant.Parameters)
@@ -115,7 +115,7 @@ static class EqualityEmitter
                         hashParts.Add(model.VariantField(variant.Name, param.Name));
                     }
 
-                    sb.AppendLine($"Tag{variant.Name} => global::System.HashCode.Combine({string.Join(", ", hashParts)}),");
+                    sb.AppendLine($"Tags.{variant.Name} => global::System.HashCode.Combine({string.Join(", ", hashParts)}),");
                 }
                 sb.AppendLine($"_ => {tag}.GetHashCode()");
                 sb.CloseBraceNoNewline();

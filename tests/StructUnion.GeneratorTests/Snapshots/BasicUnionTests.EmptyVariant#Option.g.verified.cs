@@ -24,11 +24,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Option : global::System.IEquatable<Option>
 {
-    private const byte TagSome = 1;
-    private const byte TagNone = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Some = 1,
+        None = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
     private readonly int _some_value;
@@ -39,7 +43,7 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     public static partial Option Some(int value)
     {
         var result = default(Option);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagSome;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Some;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._some_value) = value;
         return result;
     }
@@ -47,31 +51,31 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     public static partial Option None()
     {
         var result = default(Option);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagNone;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.None;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsSome => _tag == TagSome;
-    public bool IsNone => _tag == TagNone;
+    public bool IsSome => _tag == Tags.Some;
+    public bool IsNone => _tag == Tags.None;
 
     public int SomeValue
     {
         get
         {
-            if (_tag != TagSome) ThrowInvalidCase(nameof(Some));
+            if (_tag != Tags.Some) ThrowInvalidCase(nameof(Some));
             return _some_value;
         }
     }
 
     public bool TryGetSome(out int value)
     {
-        if (_tag == TagSome)
+        if (_tag == Tags.Some)
         {
             value = _some_value;
             return true;
@@ -81,14 +85,14 @@ public readonly partial struct Option : global::System.IEquatable<Option>
         return false;
     }
 
-    public bool TryGetNone() => _tag == TagNone;
+    public bool TryGetNone() => _tag == Tags.None;
 
     public TResult Match<TResult>(global::System.Func<int, TResult> some, global::System.Func<TResult> none)
     {
         return _tag switch
         {
-            TagSome => some(_some_value),
-            TagNone => none(),
+            Tags.Some => some(_some_value),
+            Tags.None => none(),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -97,8 +101,8 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     {
         switch (_tag)
         {
-            case TagSome: some(_some_value); break;
-            case TagNone: none(); break;
+            case Tags.Some: some(_some_value); break;
+            case Tags.None: none(); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -110,8 +114,8 @@ public readonly partial struct Option : global::System.IEquatable<Option>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagSome => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_some_value, other._some_value),
-            TagNone => true,
+            Tags.Some => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_some_value, other._some_value),
+            Tags.None => true,
             _ => true
         };
     }
@@ -122,8 +126,8 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     {
         return _tag switch
         {
-            TagSome => global::System.HashCode.Combine(_tag, _some_value),
-            TagNone => global::System.HashCode.Combine(_tag),
+            Tags.Some => global::System.HashCode.Combine(_tag, _some_value),
+            Tags.None => global::System.HashCode.Combine(_tag),
             _ => _tag.GetHashCode()
         };
     }
@@ -135,8 +139,8 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     {
         return _tag switch
         {
-            TagSome => $"Some({_some_value})",
-            TagNone => "None",
+            Tags.Some => $"Some({_some_value})",
+            Tags.None => "None",
             _ => "<invalid>"
         };
     }

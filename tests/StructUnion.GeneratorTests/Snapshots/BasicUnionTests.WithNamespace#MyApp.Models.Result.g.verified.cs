@@ -27,11 +27,15 @@ namespace MyApp.Models
     [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
     public readonly partial struct Result : global::System.IEquatable<Result>
     {
-        private const byte TagOk = 1;
-        private const byte TagError = 2;
+        public enum Tags : byte
+        {
+            Default = 0,
+            Ok = 1,
+            Error = 2,
+        }
 
         [global::System.Runtime.InteropServices.FieldOffset(0)]
-        private readonly byte _tag;
+        private readonly Tags _tag;
 
         [global::System.Runtime.InteropServices.FieldOffset(4)]
         private readonly int _ok_value;
@@ -45,7 +49,7 @@ namespace MyApp.Models
         public static partial Result Ok(int value)
         {
             var result = default(Result);
-            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagOk;
+            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Ok;
             global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._ok_value) = value;
             return result;
         }
@@ -53,25 +57,25 @@ namespace MyApp.Models
         public static partial Result Error(int code)
         {
             var result = default(Result);
-            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagError;
+            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Error;
             global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._error_code) = code;
             return result;
         }
 
         /// <summary>Gets the tag value identifying which variant is active.</summary>
-        public byte Tag => _tag;
+        public Tags Tag => _tag;
 
         /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-        public bool IsDefault => _tag == 0;
+        public bool IsDefault => _tag == Tags.Default;
 
-        public bool IsOk => _tag == TagOk;
-        public bool IsError => _tag == TagError;
+        public bool IsOk => _tag == Tags.Ok;
+        public bool IsError => _tag == Tags.Error;
 
         public int OkValue
         {
             get
             {
-                if (_tag != TagOk) ThrowInvalidCase(nameof(Ok));
+                if (_tag != Tags.Ok) ThrowInvalidCase(nameof(Ok));
                 return _ok_value;
             }
         }
@@ -79,14 +83,14 @@ namespace MyApp.Models
         {
             get
             {
-                if (_tag != TagError) ThrowInvalidCase(nameof(Error));
+                if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
                 return _error_code;
             }
         }
 
         public bool TryGetOk(out int value)
         {
-            if (_tag == TagOk)
+            if (_tag == Tags.Ok)
             {
                 value = _ok_value;
                 return true;
@@ -98,7 +102,7 @@ namespace MyApp.Models
 
         public bool TryGetError(out int code)
         {
-            if (_tag == TagError)
+            if (_tag == Tags.Error)
             {
                 code = _error_code;
                 return true;
@@ -112,8 +116,8 @@ namespace MyApp.Models
         {
             return _tag switch
             {
-                TagOk => ok(_ok_value),
-                TagError => error(_error_code),
+                Tags.Ok => ok(_ok_value),
+                Tags.Error => error(_error_code),
                 _ => ThrowUnknownTag<TResult>()
             };
         }
@@ -122,8 +126,8 @@ namespace MyApp.Models
         {
             switch (_tag)
             {
-                case TagOk: ok(_ok_value); break;
-                case TagError: error(_error_code); break;
+                case Tags.Ok: ok(_ok_value); break;
+                case Tags.Error: error(_error_code); break;
                 default: ThrowUnknownTag<int>(); break;
             }
         }
@@ -133,8 +137,8 @@ namespace MyApp.Models
             if (_tag != other._tag) return false;
             return _tag switch
             {
-                TagOk => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_ok_value, other._ok_value),
-                TagError => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_error_code, other._error_code),
+                Tags.Ok => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_ok_value, other._ok_value),
+                Tags.Error => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_error_code, other._error_code),
                 _ => true
             };
         }
@@ -145,8 +149,8 @@ namespace MyApp.Models
         {
             return _tag switch
             {
-                TagOk => global::System.HashCode.Combine(_tag, _ok_value),
-                TagError => global::System.HashCode.Combine(_tag, _error_code),
+                Tags.Ok => global::System.HashCode.Combine(_tag, _ok_value),
+                Tags.Error => global::System.HashCode.Combine(_tag, _error_code),
                 _ => _tag.GetHashCode()
             };
         }
@@ -158,8 +162,8 @@ namespace MyApp.Models
         {
             return _tag switch
             {
-                TagOk => $"Ok({_ok_value})",
-                TagError => $"Error({_error_code})",
+                Tags.Ok => $"Ok({_ok_value})",
+                Tags.Error => $"Error({_error_code})",
                 _ => "<invalid>"
             };
         }

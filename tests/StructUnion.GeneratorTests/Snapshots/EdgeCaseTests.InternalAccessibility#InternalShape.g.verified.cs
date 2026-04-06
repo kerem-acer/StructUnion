@@ -26,11 +26,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 internal readonly partial struct InternalShape : global::System.IEquatable<InternalShape>
 {
-    private const byte TagCircle = 1;
-    private const byte TagRect = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Circle = 1,
+        Rect = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly double _circle_radius;
@@ -47,7 +51,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     public static partial InternalShape Circle(double radius)
     {
         var result = default(InternalShape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagCircle;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Circle;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._circle_radius) = radius;
         return result;
     }
@@ -55,26 +59,26 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     public static partial InternalShape Rect(double w, double h)
     {
         var result = default(InternalShape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagRect;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Rect;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._rect_w) = w;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._rect_h) = h;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsCircle => _tag == TagCircle;
-    public bool IsRect => _tag == TagRect;
+    public bool IsCircle => _tag == Tags.Circle;
+    public bool IsRect => _tag == Tags.Rect;
 
     public double CircleRadius
     {
         get
         {
-            if (_tag != TagCircle) ThrowInvalidCase(nameof(Circle));
+            if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
             return _circle_radius;
         }
     }
@@ -82,7 +86,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     {
         get
         {
-            if (_tag != TagRect) ThrowInvalidCase(nameof(Rect));
+            if (_tag != Tags.Rect) ThrowInvalidCase(nameof(Rect));
             return _rect_w;
         }
     }
@@ -90,14 +94,14 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     {
         get
         {
-            if (_tag != TagRect) ThrowInvalidCase(nameof(Rect));
+            if (_tag != Tags.Rect) ThrowInvalidCase(nameof(Rect));
             return _rect_h;
         }
     }
 
     public bool TryGetCircle(out double radius)
     {
-        if (_tag == TagCircle)
+        if (_tag == Tags.Circle)
         {
             radius = _circle_radius;
             return true;
@@ -109,7 +113,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
 
     public bool TryGetRect(out double w, out double h)
     {
-        if (_tag == TagRect)
+        if (_tag == Tags.Rect)
         {
             w = _rect_w;
             h = _rect_h;
@@ -125,8 +129,8 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     {
         return _tag switch
         {
-            TagCircle => circle(_circle_radius),
-            TagRect => rect(_rect_w, _rect_h),
+            Tags.Circle => circle(_circle_radius),
+            Tags.Rect => rect(_rect_w, _rect_h),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -135,8 +139,8 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     {
         switch (_tag)
         {
-            case TagCircle: circle(_circle_radius); break;
-            case TagRect: rect(_rect_w, _rect_h); break;
+            case Tags.Circle: circle(_circle_radius); break;
+            case Tags.Rect: rect(_rect_w, _rect_h); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -148,8 +152,8 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagCircle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_radius, other._circle_radius),
-            TagRect => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rect_w, other._rect_w) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rect_h, other._rect_h),
+            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_radius, other._circle_radius),
+            Tags.Rect => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rect_w, other._rect_w) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rect_h, other._rect_h),
             _ => true
         };
     }
@@ -160,8 +164,8 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     {
         return _tag switch
         {
-            TagCircle => global::System.HashCode.Combine(_tag, _circle_radius),
-            TagRect => global::System.HashCode.Combine(_tag, _rect_w, _rect_h),
+            Tags.Circle => global::System.HashCode.Combine(_tag, _circle_radius),
+            Tags.Rect => global::System.HashCode.Combine(_tag, _rect_w, _rect_h),
             _ => _tag.GetHashCode()
         };
     }
@@ -173,8 +177,8 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     {
         return _tag switch
         {
-            TagCircle => $"Circle({_circle_radius})",
-            TagRect => $"Rect({_rect_w}, {_rect_h})",
+            Tags.Circle => $"Circle({_circle_radius})",
+            Tags.Rect => $"Rect({_rect_w}, {_rect_h})",
             _ => "<invalid>"
         };
     }

@@ -41,7 +41,7 @@ static class MatchEmitter
             {
                 var args = string.Join(", ", variant.Parameters.Select(p =>
                     model.VariantField(variant.Name, p.Name)));
-                sb.AppendLine($"Tag{variant.Name} => {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}),");
+                sb.AppendLine($"Tags.{variant.Name} => {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}),");
             }
             sb.AppendLine("_ => ThrowUnknownTag<TResult>()");
             sb.CloseBraceNoNewline();
@@ -77,7 +77,7 @@ static class MatchEmitter
                 {
                     var args = string.Join(", ", variant.Parameters.Select(p =>
                         model.VariantField(variant.Name, p.Name)));
-                    sb.AppendLine($"case Tag{variant.Name}: {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}); break;");
+                    sb.AppendLine($"case Tags.{variant.Name}: {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}); break;");
                 }
                 sb.AppendLine("default: ThrowUnknownTag<int>(); break;");
             }

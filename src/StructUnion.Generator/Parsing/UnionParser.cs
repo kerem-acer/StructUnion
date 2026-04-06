@@ -12,6 +12,16 @@ static class UnionParser
     const int MaxVariants = 255;
     const int LargeStructThreshold = 64;
 
+    /// <summary>
+    /// Default option values — lowest priority in the cascade:
+    /// StructUnionAttribute ?? StructUnionOptions (user) ?? Defaults
+    /// </summary>
+    static readonly StructUnionOptions Defaults = new(
+        TagPropertyName: "Tag",
+        TemplateSuffix: "Record",
+        EnableImplicitConversions: true,
+        NestedAccessors: false);
+
     public static ParseResult Parse(GeneratorAttributeSyntaxContext ctx, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -36,7 +46,12 @@ static class UnionParser
         GeneratorAttributeSyntaxContext ctx, INamedTypeSymbol symbol,
         StructDeclarationSyntax syntax, CancellationToken ct)
     {
-        var (enableImplicit, _) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, _, perTypeTag, perTypeNested, _) = ctx.GetStructUnionAttributeProps();
+        var (asmTag, _, asmImplicit, asmNested) = ctx.SemanticModel.Compilation.GetAssemblyOptions();
+
+        var enableImplicit = perTypeImplicit ?? asmImplicit ?? Defaults.EnableImplicitConversions;
+        var tagPropertyName = perTypeTag ?? asmTag ?? Defaults.TagPropertyName;
+        var nestedAccessors = perTypeNested ?? asmNested ?? Defaults.NestedAccessors;
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = syntax.Identifier.GetLocation();
 
@@ -105,8 +120,13 @@ static class UnionParser
         var noCommonFields = ImmutableArray<FieldModel>.Empty;
         var variantsArr = variants.ToImmutable();
 
+        if (HasTagPropertyNameConflict(variantsArr, noCommonFields, tagPropertyName, symbol.Name, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
         var model = BuildModel(symbol, variantsArr, noCommonFields, enableImplicit,
-            symbol.Name, GenerationMode.PartialStruct);
+            symbol.Name, GenerationMode.PartialStruct, tagPropertyName, nestedAccessors);
 
         CheckLargeStruct(model, location, diagnostics);
 
@@ -118,12 +138,24 @@ static class UnionParser
     static ParseResult ParseTemplate(
         GeneratorAttributeSyntaxContext ctx, INamedTypeSymbol symbol, CancellationToken ct)
     {
-        var (enableImplicit, explicitName) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix) = ctx.GetStructUnionAttributeProps();
+        var (asmTag, asmSuffix, asmImplicit, asmNested) = ctx.SemanticModel.Compilation.GetAssemblyOptions();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = ctx.TargetNode.GetLocation();
 
-        var suffix = ctx.SemanticModel.Compilation.GetRecordSuffix();
-        var structName = NamingConventions.DeriveStructName(symbol.Name, explicitName, suffix);
+        if (generatedName is not null && perTypeSuffix is not null)
+        {
+            diagnostics.Add(DiagnosticInfo.Create(
+                DiagnosticDescriptors.GeneratedNameAndSuffixConflict, location, symbol.Name));
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        var enableImplicit = perTypeImplicit ?? asmImplicit ?? Defaults.EnableImplicitConversions;
+        var tagPropertyName = perTypeTag ?? asmTag ?? Defaults.TagPropertyName;
+        var nestedAccessors = perTypeNested ?? asmNested ?? Defaults.NestedAccessors;
+        var effectiveSuffix = perTypeSuffix ?? asmSuffix ?? Defaults.TemplateSuffix;
+
+        var structName = NamingConventions.DeriveStructName(symbol.Name, generatedName, effectiveSuffix);
 
         // Common fields from primary constructor params + declared properties
         var commonFields = ExtractTemplateCommonFields(symbol);
@@ -158,9 +190,14 @@ static class UnionParser
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
+        if (HasTagPropertyNameConflict(variants.ToImmutable(), commonFields.ToImmutable(), tagPropertyName, symbol.Name, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
         var templateKeyword = symbol.IsRecord ? "record" : "class";
         var model = BuildModel(symbol, variants.ToImmutable(), commonFields.ToImmutable(), enableImplicit,
-            structName, GenerationMode.RecordTemplate, symbol.Name, templateKeyword);
+            structName, GenerationMode.RecordTemplate, tagPropertyName, nestedAccessors, symbol.Name, templateKeyword);
 
         CheckLargeStruct(model, location, diagnostics);
 
@@ -176,6 +213,8 @@ static class UnionParser
         bool enableImplicit,
         string name,
         GenerationMode mode,
+        string tagPropertyName,
+        bool nestedAccessors,
         string templateTypeName = "",
         string templateTypeKeyword = "")
     {
@@ -197,7 +236,7 @@ static class UnionParser
             commonFields.ToEquatableArray(),
             layout, enableImplicit, refZoneOffset, valueZoneOffset,
             totalSize, structAlignment, mode,
-            templateTypeName, templateTypeKeyword);
+            tagPropertyName, nestedAccessors, templateTypeName, templateTypeKeyword);
     }
 
     static bool HasCaseInsensitiveDuplicate(
@@ -217,6 +256,41 @@ static class UnionParser
             }
 
             seen[variant.Name] = variant.Name;
+        }
+
+        return false;
+    }
+
+    static bool HasTagPropertyNameConflict(
+        ImmutableArray<VariantModel> variants,
+        ImmutableArray<FieldModel> commonFields,
+        string tagPropertyName,
+        string typeName,
+        Location location,
+        ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        // Check if any variant name matches the tag property name
+        foreach (var variant in variants)
+        {
+            if (string.Equals(variant.Name, tagPropertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                diagnostics.Add(DiagnosticInfo.Create(
+                    DiagnosticDescriptors.TagPropertyNameConflict, location,
+                    tagPropertyName, typeName));
+                return true;
+            }
+        }
+
+        // Check if any common field name matches the tag property name
+        foreach (var field in commonFields)
+        {
+            if (string.Equals(field.Name, tagPropertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                diagnostics.Add(DiagnosticInfo.Create(
+                    DiagnosticDescriptors.TagPropertyNameConflict, location,
+                    tagPropertyName, typeName));
+                return true;
+            }
         }
 
         return false;

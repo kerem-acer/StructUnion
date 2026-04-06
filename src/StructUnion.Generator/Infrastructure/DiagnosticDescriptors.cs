@@ -70,6 +70,22 @@ static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor TagPropertyNameConflict = new(
+        id: "SU0009",
+        title: "Tag property name conflicts with generated member",
+        messageFormat: "The tag property name '{0}' conflicts with a generated member on '{1}'. Rename the conflicting member or set TagPropertyName to a different name.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor GeneratedNameAndSuffixConflict = new(
+        id: "SU0010",
+        title: "GeneratedName and TemplateSuffix cannot both be set",
+        messageFormat: "The type '{0}' has both GeneratedName and TemplateSuffix set on [StructUnion]; use one or the other",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static DiagnosticDescriptor GetById(string id) => id switch
     {
         "SU0001" => StructMustBePartial,
@@ -80,6 +96,8 @@ static class DiagnosticDescriptors
         "SU0006" => TooManyVariants,
         "SU0007" => LargeStructWarning,
         "SU0008" => DuplicateVariantNameCaseInsensitive,
+        "SU0009" => TagPropertyNameConflict,
+        "SU0010" => GeneratedNameAndSuffixConflict,
         _ => throw new ArgumentException($"Unknown diagnostic id: {id}", nameof(id))
     };
 }

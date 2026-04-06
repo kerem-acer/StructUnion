@@ -195,4 +195,38 @@ public class ShapeTests
         await Assert.That(shape.TriangleBase).IsEqualTo(6.0);
         await Assert.That(shape.TriangleHeight).IsEqualTo(4.0);
     }
+
+    [Test]
+    public async Task Tag_ReturnsCorrectEnumValue()
+    {
+        var circle = Shape.Circle(5.0);
+        var rect = Shape.Rectangle(3.0, 4.0);
+        var tri = Shape.Triangle(6.0, 4.0);
+
+        await Assert.That(circle.Tag).IsEqualTo(Shape.Tags.Circle);
+        await Assert.That(rect.Tag).IsEqualTo(Shape.Tags.Rectangle);
+        await Assert.That(tri.Tag).IsEqualTo(Shape.Tags.Triangle);
+    }
+
+    [Test]
+    public async Task Tag_Default_ReturnsDefault()
+    {
+        var shape = default(Shape);
+        await Assert.That(shape.Tag).IsEqualTo(Shape.Tags.Default);
+    }
+
+    [Test]
+    public async Task Tag_SwitchExpression_Works()
+    {
+        var shape = Shape.Circle(5.0);
+        var name = shape.Tag switch
+        {
+            Shape.Tags.Circle => "circle",
+            Shape.Tags.Rectangle => "rectangle",
+            Shape.Tags.Triangle => "triangle",
+            _ => "unknown"
+        };
+
+        await Assert.That(name).IsEqualTo("circle");
+    }
 }

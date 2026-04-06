@@ -23,10 +23,14 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
 {
-    private const byte TagValue = 1;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Value = 1,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
     private readonly int _value_x;
@@ -37,31 +41,31 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     public static partial Wrapper Value(int x)
     {
         var result = default(Wrapper);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagValue;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Value;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._value_x) = x;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsValue => _tag == TagValue;
+    public bool IsValue => _tag == Tags.Value;
 
     public int ValueX
     {
         get
         {
-            if (_tag != TagValue) ThrowInvalidCase(nameof(Value));
+            if (_tag != Tags.Value) ThrowInvalidCase(nameof(Value));
             return _value_x;
         }
     }
 
     public bool TryGetValue(out int x)
     {
-        if (_tag == TagValue)
+        if (_tag == Tags.Value)
         {
             x = _value_x;
             return true;
@@ -75,7 +79,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     {
         return _tag switch
         {
-            TagValue => value(_value_x),
+            Tags.Value => value(_value_x),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -84,7 +88,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     {
         switch (_tag)
         {
-            case TagValue: value(_value_x); break;
+            case Tags.Value: value(_value_x); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -96,7 +100,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagValue => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_value_x, other._value_x),
+            Tags.Value => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_value_x, other._value_x),
             _ => true
         };
     }
@@ -107,7 +111,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     {
         return _tag switch
         {
-            TagValue => global::System.HashCode.Combine(_tag, _value_x),
+            Tags.Value => global::System.HashCode.Combine(_tag, _value_x),
             _ => _tag.GetHashCode()
         };
     }
@@ -119,7 +123,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     {
         return _tag switch
         {
-            TagValue => $"Value({_value_x})",
+            Tags.Value => $"Value({_value_x})",
             _ => "<invalid>"
         };
     }

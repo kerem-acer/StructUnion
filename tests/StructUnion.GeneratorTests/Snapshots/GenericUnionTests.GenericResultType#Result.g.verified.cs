@@ -7,10 +7,14 @@
 
 public readonly partial struct Result<TOk, TError> : global::System.IEquatable<Result<TOk, TError>>
 {
-    private const byte TagOk = 1;
-    private const byte TagError = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Ok = 1,
+        Error = 2,
+    }
 
-    private readonly byte _tag;
+    private readonly Tags _tag;
     private readonly TOk _ok_value;
     private readonly TError _error_error;
 
@@ -20,7 +24,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     public static partial Result<TOk, TError> Ok(TOk value)
     {
         var result = default(Result<TOk, TError>);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagOk;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Ok;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._ok_value) = value;
         return result;
     }
@@ -28,25 +32,25 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     public static partial Result<TOk, TError> Error(TError error)
     {
         var result = default(Result<TOk, TError>);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagError;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Error;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._error_error) = error;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsOk => _tag == TagOk;
-    public bool IsError => _tag == TagError;
+    public bool IsOk => _tag == Tags.Ok;
+    public bool IsError => _tag == Tags.Error;
 
     public TOk OkValue
     {
         get
         {
-            if (_tag != TagOk) ThrowInvalidCase(nameof(Ok));
+            if (_tag != Tags.Ok) ThrowInvalidCase(nameof(Ok));
             return _ok_value;
         }
     }
@@ -54,14 +58,14 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     {
         get
         {
-            if (_tag != TagError) ThrowInvalidCase(nameof(Error));
+            if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
             return _error_error;
         }
     }
 
     public bool TryGetOk(out TOk value)
     {
-        if (_tag == TagOk)
+        if (_tag == Tags.Ok)
         {
             value = _ok_value;
             return true;
@@ -73,7 +77,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
 
     public bool TryGetError(out TError error)
     {
-        if (_tag == TagError)
+        if (_tag == Tags.Error)
         {
             error = _error_error;
             return true;
@@ -87,8 +91,8 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     {
         return _tag switch
         {
-            TagOk => ok(_ok_value),
-            TagError => error(_error_error),
+            Tags.Ok => ok(_ok_value),
+            Tags.Error => error(_error_error),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -97,8 +101,8 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     {
         switch (_tag)
         {
-            case TagOk: ok(_ok_value); break;
-            case TagError: error(_error_error); break;
+            case Tags.Ok: ok(_ok_value); break;
+            case Tags.Error: error(_error_error); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -111,8 +115,8 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagOk => global::System.Collections.Generic.EqualityComparer<TOk>.Default.Equals(_ok_value, other._ok_value),
-            TagError => global::System.Collections.Generic.EqualityComparer<TError>.Default.Equals(_error_error, other._error_error),
+            Tags.Ok => global::System.Collections.Generic.EqualityComparer<TOk>.Default.Equals(_ok_value, other._ok_value),
+            Tags.Error => global::System.Collections.Generic.EqualityComparer<TError>.Default.Equals(_error_error, other._error_error),
             _ => true
         };
     }
@@ -123,8 +127,8 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     {
         return _tag switch
         {
-            TagOk => global::System.HashCode.Combine(_tag, _ok_value),
-            TagError => global::System.HashCode.Combine(_tag, _error_error),
+            Tags.Ok => global::System.HashCode.Combine(_tag, _ok_value),
+            Tags.Error => global::System.HashCode.Combine(_tag, _error_error),
             _ => _tag.GetHashCode()
         };
     }
@@ -136,8 +140,8 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     {
         return _tag switch
         {
-            TagOk => $"Ok({_ok_value})",
-            TagError => $"Error({_error_error})",
+            Tags.Ok => $"Ok({_ok_value})",
+            Tags.Error => $"Error({_error_error})",
             _ => "<invalid>"
         };
     }

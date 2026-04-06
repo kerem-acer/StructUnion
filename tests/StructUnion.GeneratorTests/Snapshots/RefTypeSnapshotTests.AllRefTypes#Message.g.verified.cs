@@ -27,12 +27,16 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Message : global::System.IEquatable<Message>
 {
-    private const byte TagText = 1;
-    private const byte TagData = 2;
-    private const byte TagError = 3;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Text = 1,
+        Data = 2,
+        Error = 3,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly string _text_Value;
@@ -49,7 +53,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     public static Message Text(string value)
     {
         var result = default(Message);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagText;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Text;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._text_Value) = value;
         return result;
     }
@@ -57,7 +61,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     public static Message Data(int[] items)
     {
         var result = default(Message);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagData;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Data;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._data_Items) = items;
         return result;
     }
@@ -65,26 +69,26 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     public static Message Error(global::System.Exception ex)
     {
         var result = default(Message);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagError;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Error;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._error_Ex) = ex;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsText => _tag == TagText;
-    public bool IsData => _tag == TagData;
-    public bool IsError => _tag == TagError;
+    public bool IsText => _tag == Tags.Text;
+    public bool IsData => _tag == Tags.Data;
+    public bool IsError => _tag == Tags.Error;
 
     public string TextValue
     {
         get
         {
-            if (_tag != TagText) ThrowInvalidCase(nameof(Text));
+            if (_tag != Tags.Text) ThrowInvalidCase(nameof(Text));
             return _text_Value;
         }
     }
@@ -92,7 +96,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     {
         get
         {
-            if (_tag != TagData) ThrowInvalidCase(nameof(Data));
+            if (_tag != Tags.Data) ThrowInvalidCase(nameof(Data));
             return _data_Items;
         }
     }
@@ -100,14 +104,14 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     {
         get
         {
-            if (_tag != TagError) ThrowInvalidCase(nameof(Error));
+            if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
             return _error_Ex;
         }
     }
 
     public bool TryGetText(out string Value)
     {
-        if (_tag == TagText)
+        if (_tag == Tags.Text)
         {
             Value = _text_Value;
             return true;
@@ -119,7 +123,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
 
     public bool TryGetData(out int[] Items)
     {
-        if (_tag == TagData)
+        if (_tag == Tags.Data)
         {
             Items = _data_Items;
             return true;
@@ -131,7 +135,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
 
     public bool TryGetError(out global::System.Exception Ex)
     {
-        if (_tag == TagError)
+        if (_tag == Tags.Error)
         {
             Ex = _error_Ex;
             return true;
@@ -145,9 +149,9 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     {
         return _tag switch
         {
-            TagText => text(_text_Value),
-            TagData => data(_data_Items),
-            TagError => error(_error_Ex),
+            Tags.Text => text(_text_Value),
+            Tags.Data => data(_data_Items),
+            Tags.Error => error(_error_Ex),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -156,9 +160,9 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     {
         switch (_tag)
         {
-            case TagText: text(_text_Value); break;
-            case TagData: data(_data_Items); break;
-            case TagError: error(_error_Ex); break;
+            case Tags.Text: text(_text_Value); break;
+            case Tags.Data: data(_data_Items); break;
+            case Tags.Error: error(_error_Ex); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -172,9 +176,9 @@ public readonly partial struct Message : global::System.IEquatable<Message>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagText => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_text_Value, other._text_Value),
-            TagData => global::System.Collections.Generic.EqualityComparer<int[]>.Default.Equals(_data_Items, other._data_Items),
-            TagError => global::System.Collections.Generic.EqualityComparer<global::System.Exception>.Default.Equals(_error_Ex, other._error_Ex),
+            Tags.Text => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_text_Value, other._text_Value),
+            Tags.Data => global::System.Collections.Generic.EqualityComparer<int[]>.Default.Equals(_data_Items, other._data_Items),
+            Tags.Error => global::System.Collections.Generic.EqualityComparer<global::System.Exception>.Default.Equals(_error_Ex, other._error_Ex),
             _ => true
         };
     }
@@ -185,9 +189,9 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     {
         return _tag switch
         {
-            TagText => global::System.HashCode.Combine(_tag, _text_Value),
-            TagData => global::System.HashCode.Combine(_tag, _data_Items),
-            TagError => global::System.HashCode.Combine(_tag, _error_Ex),
+            Tags.Text => global::System.HashCode.Combine(_tag, _text_Value),
+            Tags.Data => global::System.HashCode.Combine(_tag, _data_Items),
+            Tags.Error => global::System.HashCode.Combine(_tag, _error_Ex),
             _ => _tag.GetHashCode()
         };
     }
@@ -199,9 +203,9 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     {
         return _tag switch
         {
-            TagText => $"Text({_text_Value})",
-            TagData => $"Data({_data_Items})",
-            TagError => $"Error({_error_Ex})",
+            Tags.Text => $"Text({_text_Value})",
+            Tags.Data => $"Data({_data_Items})",
+            Tags.Error => $"Error({_error_Ex})",
             _ => "<invalid>"
         };
     }

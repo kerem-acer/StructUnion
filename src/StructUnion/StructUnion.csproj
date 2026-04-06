@@ -1,7 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0;net10.0</TargetFrameworks>
+
+    <!-- NuGet package metadata -->
+    <PackageId>StructUnion</PackageId>
+    <Description>Discriminated unions as value types for C#. Define variants via partial structs or record templates and get factory methods, pattern matching, equality, and more — all generated at compile time with zero allocations.</Description>
+    <PackageTags>discriminated-union;tagged-union;source-generator;struct;roslyn;codegen</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Ensure the generator DLL is not a runtime dependency -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <DevelopmentDependency>false</DevelopmentDependency>
   </PropertyGroup>
+
+  <!-- Bundle the generator into analyzers/ so consumers get it automatically -->
+  <ItemGroup>
+    <ProjectReference Include="../StructUnion.Generator/StructUnion.Generator.csproj"
+                      PrivateAssets="all"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../StructUnion.Generator/bin/$(Configuration)/netstandard2.0/StructUnion.Generator.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Polyfill" PrivateAssets="all" />

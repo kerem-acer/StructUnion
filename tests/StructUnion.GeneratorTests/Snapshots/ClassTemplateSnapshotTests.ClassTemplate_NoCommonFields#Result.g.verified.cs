@@ -26,11 +26,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Result : global::System.IEquatable<Result>
 {
-    private const byte TagOk = 1;
-    private const byte TagError = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Ok = 1,
+        Error = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
     private readonly int _ok_Value;
@@ -47,7 +51,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     public static Result Ok(int value)
     {
         var result = default(Result);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagOk;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Ok;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._ok_Value) = value;
         return result;
     }
@@ -55,26 +59,26 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     public static Result Error(int code, string message)
     {
         var result = default(Result);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagError;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Error;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._error_Code) = code;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._error_Message) = message;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsOk => _tag == TagOk;
-    public bool IsError => _tag == TagError;
+    public bool IsOk => _tag == Tags.Ok;
+    public bool IsError => _tag == Tags.Error;
 
     public int OkValue
     {
         get
         {
-            if (_tag != TagOk) ThrowInvalidCase(nameof(Ok));
+            if (_tag != Tags.Ok) ThrowInvalidCase(nameof(Ok));
             return _ok_Value;
         }
     }
@@ -82,7 +86,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     {
         get
         {
-            if (_tag != TagError) ThrowInvalidCase(nameof(Error));
+            if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
             return _error_Code;
         }
     }
@@ -90,14 +94,14 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     {
         get
         {
-            if (_tag != TagError) ThrowInvalidCase(nameof(Error));
+            if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
             return _error_Message;
         }
     }
 
     public bool TryGetOk(out int Value)
     {
-        if (_tag == TagOk)
+        if (_tag == Tags.Ok)
         {
             Value = _ok_Value;
             return true;
@@ -109,7 +113,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
 
     public bool TryGetError(out int Code, out string Message)
     {
-        if (_tag == TagError)
+        if (_tag == Tags.Error)
         {
             Code = _error_Code;
             Message = _error_Message;
@@ -125,8 +129,8 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     {
         return _tag switch
         {
-            TagOk => ok(_ok_Value),
-            TagError => error(_error_Code, _error_Message),
+            Tags.Ok => ok(_ok_Value),
+            Tags.Error => error(_error_Code, _error_Message),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -135,8 +139,8 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     {
         switch (_tag)
         {
-            case TagOk: ok(_ok_Value); break;
-            case TagError: error(_error_Code, _error_Message); break;
+            case Tags.Ok: ok(_ok_Value); break;
+            case Tags.Error: error(_error_Code, _error_Message); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -148,8 +152,8 @@ public readonly partial struct Result : global::System.IEquatable<Result>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagOk => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_ok_Value, other._ok_Value),
-            TagError => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_error_Code, other._error_Code) && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_error_Message, other._error_Message),
+            Tags.Ok => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_ok_Value, other._ok_Value),
+            Tags.Error => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_error_Code, other._error_Code) && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_error_Message, other._error_Message),
             _ => true
         };
     }
@@ -160,8 +164,8 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     {
         return _tag switch
         {
-            TagOk => global::System.HashCode.Combine(_tag, _ok_Value),
-            TagError => global::System.HashCode.Combine(_tag, _error_Code, _error_Message),
+            Tags.Ok => global::System.HashCode.Combine(_tag, _ok_Value),
+            Tags.Error => global::System.HashCode.Combine(_tag, _error_Code, _error_Message),
             _ => _tag.GetHashCode()
         };
     }
@@ -173,8 +177,8 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     {
         return _tag switch
         {
-            TagOk => $"Ok({_ok_Value})",
-            TagError => $"Error({_error_Code}, {_error_Message})",
+            Tags.Ok => $"Ok({_ok_Value})",
+            Tags.Error => $"Error({_error_Code}, {_error_Message})",
             _ => "<invalid>"
         };
     }

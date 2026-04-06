@@ -2,13 +2,20 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <IsRoslynComponent>true</IsRoslynComponent>
+    <IsPackable>false</IsPackable>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <PolyUseEmbeddedAttribute>true</PolyUseEmbeddedAttribute>
+    <DefineConstants>$(DefineConstants);STRUCT_UNION_GENERATOR</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="StructUnion.UnitTests" />
     <InternalsVisibleTo Include="StructUnion.GeneratorTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../StructUnion/StructUnionAttribute.cs" Link="Attributes/StructUnionAttribute.cs" />
+    <Compile Include="../StructUnion/StructUnionOptionsAttribute.cs" Link="Attributes/StructUnionOptionsAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>

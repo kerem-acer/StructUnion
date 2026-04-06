@@ -63,6 +63,12 @@ static class UnionEmitter
         FieldEmitter.Emit(sb, model);
         sb.AppendLine();
 
+        // Variant case structs (when nested accessors enabled)
+        if (model.NestedAccessors)
+        {
+            CasesEmitter.Emit(sb, model);
+        }
+
         // Factory methods
         FactoryEmitter.Emit(sb, model);
 

@@ -8,9 +8,14 @@ static class FieldEmitter
 {
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
-        foreach (var variant in model.Variants)
+        sb.AppendLine("public enum Tags : byte");
+        using (sb.Block())
         {
-            sb.AppendLine($"private const byte Tag{variant.Name} = {variant.Tag};");
+            sb.AppendLine("Default = 0,");
+            foreach (var variant in model.Variants)
+            {
+                sb.AppendLine($"{variant.Name} = {variant.Tag},");
+            }
         }
 
         sb.AppendLine();
@@ -28,7 +33,7 @@ static class FieldEmitter
     static void EmitExplicitFields(SourceBuilder sb, UnionModel model)
     {
         sb.AppendLine("[global::System.Runtime.InteropServices.FieldOffset(0)]");
-        sb.AppendLine("private readonly byte _tag;");
+        sb.AppendLine("private readonly Tags _tag;");
 
         // Common fields
         for (var i = 0; i < model.CommonFields.Count; i++)
@@ -58,7 +63,7 @@ static class FieldEmitter
 
     static void EmitAutoFields(SourceBuilder sb, UnionModel model)
     {
-        sb.AppendLine("private readonly byte _tag;");
+        sb.AppendLine("private readonly Tags _tag;");
 
         foreach (var field in model.CommonFields)
         {

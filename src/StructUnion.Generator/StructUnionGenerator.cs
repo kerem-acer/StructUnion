@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using StructUnion;
 using StructUnion.Generator.Emitting;
 using StructUnion.Generator.Parsing;
 
@@ -11,7 +12,7 @@ public sealed class StructUnionGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var results = context.SyntaxProvider.ForAttributeWithMetadataName(
-            fullyQualifiedMetadataName: "StructUnion.StructUnionAttribute",
+            fullyQualifiedMetadataName: typeof(StructUnionAttribute).FullName!,
             predicate: static (node, _) => node is StructDeclarationSyntax or RecordDeclarationSyntax or ClassDeclarationSyntax,
             transform: static (ctx, ct) => UnionParser.Parse(ctx, ct)
         );

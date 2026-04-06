@@ -29,13 +29,17 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Mixed : global::System.IEquatable<Mixed>
 {
-    private const byte TagIntCase = 1;
-    private const byte TagLongCase = 2;
-    private const byte TagByteCase = 3;
-    private const byte TagFloatCase = 4;
+    public enum Tags : byte
+    {
+        Default = 0,
+        IntCase = 1,
+        LongCase = 2,
+        ByteCase = 3,
+        FloatCase = 4,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
     private readonly int _intcase_value;
@@ -55,7 +59,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     public static partial Mixed IntCase(int value)
     {
         var result = default(Mixed);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagIntCase;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.IntCase;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._intcase_value) = value;
         return result;
     }
@@ -63,7 +67,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     public static partial Mixed LongCase(long value)
     {
         var result = default(Mixed);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagLongCase;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.LongCase;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._longcase_value) = value;
         return result;
     }
@@ -71,7 +75,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     public static partial Mixed ByteCase(byte value)
     {
         var result = default(Mixed);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagByteCase;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.ByteCase;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._bytecase_value) = value;
         return result;
     }
@@ -79,27 +83,27 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     public static partial Mixed FloatCase(float value)
     {
         var result = default(Mixed);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagFloatCase;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.FloatCase;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._floatcase_value) = value;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsIntCase => _tag == TagIntCase;
-    public bool IsLongCase => _tag == TagLongCase;
-    public bool IsByteCase => _tag == TagByteCase;
-    public bool IsFloatCase => _tag == TagFloatCase;
+    public bool IsIntCase => _tag == Tags.IntCase;
+    public bool IsLongCase => _tag == Tags.LongCase;
+    public bool IsByteCase => _tag == Tags.ByteCase;
+    public bool IsFloatCase => _tag == Tags.FloatCase;
 
     public int IntCaseValue
     {
         get
         {
-            if (_tag != TagIntCase) ThrowInvalidCase(nameof(IntCase));
+            if (_tag != Tags.IntCase) ThrowInvalidCase(nameof(IntCase));
             return _intcase_value;
         }
     }
@@ -107,7 +111,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         get
         {
-            if (_tag != TagLongCase) ThrowInvalidCase(nameof(LongCase));
+            if (_tag != Tags.LongCase) ThrowInvalidCase(nameof(LongCase));
             return _longcase_value;
         }
     }
@@ -115,7 +119,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         get
         {
-            if (_tag != TagByteCase) ThrowInvalidCase(nameof(ByteCase));
+            if (_tag != Tags.ByteCase) ThrowInvalidCase(nameof(ByteCase));
             return _bytecase_value;
         }
     }
@@ -123,14 +127,14 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         get
         {
-            if (_tag != TagFloatCase) ThrowInvalidCase(nameof(FloatCase));
+            if (_tag != Tags.FloatCase) ThrowInvalidCase(nameof(FloatCase));
             return _floatcase_value;
         }
     }
 
     public bool TryGetIntCase(out int value)
     {
-        if (_tag == TagIntCase)
+        if (_tag == Tags.IntCase)
         {
             value = _intcase_value;
             return true;
@@ -142,7 +146,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
 
     public bool TryGetLongCase(out long value)
     {
-        if (_tag == TagLongCase)
+        if (_tag == Tags.LongCase)
         {
             value = _longcase_value;
             return true;
@@ -154,7 +158,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
 
     public bool TryGetByteCase(out byte value)
     {
-        if (_tag == TagByteCase)
+        if (_tag == Tags.ByteCase)
         {
             value = _bytecase_value;
             return true;
@@ -166,7 +170,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
 
     public bool TryGetFloatCase(out float value)
     {
-        if (_tag == TagFloatCase)
+        if (_tag == Tags.FloatCase)
         {
             value = _floatcase_value;
             return true;
@@ -180,10 +184,10 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         return _tag switch
         {
-            TagIntCase => intCase(_intcase_value),
-            TagLongCase => longCase(_longcase_value),
-            TagByteCase => byteCase(_bytecase_value),
-            TagFloatCase => floatCase(_floatcase_value),
+            Tags.IntCase => intCase(_intcase_value),
+            Tags.LongCase => longCase(_longcase_value),
+            Tags.ByteCase => byteCase(_bytecase_value),
+            Tags.FloatCase => floatCase(_floatcase_value),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -192,10 +196,10 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         switch (_tag)
         {
-            case TagIntCase: intCase(_intcase_value); break;
-            case TagLongCase: longCase(_longcase_value); break;
-            case TagByteCase: byteCase(_bytecase_value); break;
-            case TagFloatCase: floatCase(_floatcase_value); break;
+            case Tags.IntCase: intCase(_intcase_value); break;
+            case Tags.LongCase: longCase(_longcase_value); break;
+            case Tags.ByteCase: byteCase(_bytecase_value); break;
+            case Tags.FloatCase: floatCase(_floatcase_value); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -210,10 +214,10 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagIntCase => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_intcase_value, other._intcase_value),
-            TagLongCase => global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(_longcase_value, other._longcase_value),
-            TagByteCase => global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(_bytecase_value, other._bytecase_value),
-            TagFloatCase => global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(_floatcase_value, other._floatcase_value),
+            Tags.IntCase => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_intcase_value, other._intcase_value),
+            Tags.LongCase => global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(_longcase_value, other._longcase_value),
+            Tags.ByteCase => global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(_bytecase_value, other._bytecase_value),
+            Tags.FloatCase => global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(_floatcase_value, other._floatcase_value),
             _ => true
         };
     }
@@ -224,10 +228,10 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         return _tag switch
         {
-            TagIntCase => global::System.HashCode.Combine(_tag, _intcase_value),
-            TagLongCase => global::System.HashCode.Combine(_tag, _longcase_value),
-            TagByteCase => global::System.HashCode.Combine(_tag, _bytecase_value),
-            TagFloatCase => global::System.HashCode.Combine(_tag, _floatcase_value),
+            Tags.IntCase => global::System.HashCode.Combine(_tag, _intcase_value),
+            Tags.LongCase => global::System.HashCode.Combine(_tag, _longcase_value),
+            Tags.ByteCase => global::System.HashCode.Combine(_tag, _bytecase_value),
+            Tags.FloatCase => global::System.HashCode.Combine(_tag, _floatcase_value),
             _ => _tag.GetHashCode()
         };
     }
@@ -239,10 +243,10 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     {
         return _tag switch
         {
-            TagIntCase => $"IntCase({_intcase_value})",
-            TagLongCase => $"LongCase({_longcase_value})",
-            TagByteCase => $"ByteCase({_bytecase_value})",
-            TagFloatCase => $"FloatCase({_floatcase_value})",
+            Tags.IntCase => $"IntCase({_intcase_value})",
+            Tags.LongCase => $"LongCase({_longcase_value})",
+            Tags.ByteCase => $"ByteCase({_bytecase_value})",
+            Tags.FloatCase => $"FloatCase({_floatcase_value})",
             _ => "<invalid>"
         };
     }

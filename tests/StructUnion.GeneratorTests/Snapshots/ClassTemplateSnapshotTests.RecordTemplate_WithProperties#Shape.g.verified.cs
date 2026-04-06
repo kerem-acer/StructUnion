@@ -27,11 +27,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct Shape : global::System.IEquatable<Shape>
 {
-    private const byte TagCircle = 1;
-    private const byte TagRectangle = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Circle = 1,
+        Rectangle = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
     public readonly int Id;
@@ -51,7 +55,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     public static Shape Circle(int id, double radius)
     {
         var result = default(Shape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagCircle;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Circle;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result.Id) = id;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._circle_Radius) = radius;
         return result;
@@ -60,7 +64,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     public static Shape Rectangle(int id, double length, double width)
     {
         var result = default(Shape);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagRectangle;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Rectangle;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result.Id) = id;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._rectangle_Length) = length;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._rectangle_Width) = width;
@@ -68,19 +72,19 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsCircle => _tag == TagCircle;
-    public bool IsRectangle => _tag == TagRectangle;
+    public bool IsCircle => _tag == Tags.Circle;
+    public bool IsRectangle => _tag == Tags.Rectangle;
 
     public double CircleRadius
     {
         get
         {
-            if (_tag != TagCircle) ThrowInvalidCase(nameof(Circle));
+            if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
             return _circle_Radius;
         }
     }
@@ -88,7 +92,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         get
         {
-            if (_tag != TagRectangle) ThrowInvalidCase(nameof(Rectangle));
+            if (_tag != Tags.Rectangle) ThrowInvalidCase(nameof(Rectangle));
             return _rectangle_Length;
         }
     }
@@ -96,14 +100,14 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         get
         {
-            if (_tag != TagRectangle) ThrowInvalidCase(nameof(Rectangle));
+            if (_tag != Tags.Rectangle) ThrowInvalidCase(nameof(Rectangle));
             return _rectangle_Width;
         }
     }
 
     public bool TryGetCircle(out double Radius)
     {
-        if (_tag == TagCircle)
+        if (_tag == Tags.Circle)
         {
             Radius = _circle_Radius;
             return true;
@@ -115,7 +119,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
 
     public bool TryGetRectangle(out double Length, out double Width)
     {
-        if (_tag == TagRectangle)
+        if (_tag == Tags.Rectangle)
         {
             Length = _rectangle_Length;
             Width = _rectangle_Width;
@@ -131,8 +135,8 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         return _tag switch
         {
-            TagCircle => circle(_circle_Radius),
-            TagRectangle => rectangle(_rectangle_Length, _rectangle_Width),
+            Tags.Circle => circle(_circle_Radius),
+            Tags.Rectangle => rectangle(_rectangle_Length, _rectangle_Width),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -141,8 +145,8 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         switch (_tag)
         {
-            case TagCircle: circle(_circle_Radius); break;
-            case TagRectangle: rectangle(_rectangle_Length, _rectangle_Width); break;
+            case Tags.Circle: circle(_circle_Radius); break;
+            case Tags.Rectangle: rectangle(_rectangle_Length, _rectangle_Width); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -153,8 +157,8 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         if (!global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)) return false;
         return _tag switch
         {
-            TagCircle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),
-            TagRectangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_Length, other._rectangle_Length) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_Width, other._rectangle_Width),
+            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),
+            Tags.Rectangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_Length, other._rectangle_Length) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_Width, other._rectangle_Width),
             _ => true
         };
     }
@@ -165,8 +169,8 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         return _tag switch
         {
-            TagCircle => global::System.HashCode.Combine(_tag, Id, _circle_Radius),
-            TagRectangle => global::System.HashCode.Combine(_tag, Id, _rectangle_Length, _rectangle_Width),
+            Tags.Circle => global::System.HashCode.Combine(_tag, Id, _circle_Radius),
+            Tags.Rectangle => global::System.HashCode.Combine(_tag, Id, _rectangle_Length, _rectangle_Width),
             _ => _tag.GetHashCode()
         };
     }
@@ -178,8 +182,8 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     {
         return _tag switch
         {
-            TagCircle => $"Circle({_circle_Radius})",
-            TagRectangle => $"Rectangle({_rectangle_Length}, {_rectangle_Width})",
+            Tags.Circle => $"Circle({_circle_Radius})",
+            Tags.Rectangle => $"Rectangle({_rectangle_Length}, {_rectangle_Width})",
             _ => "<invalid>"
         };
     }

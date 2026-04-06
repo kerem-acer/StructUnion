@@ -269,7 +269,7 @@ public class DiagnosticTests
         var source = """
             using StructUnion;
 
-            [assembly: StructUnionSettings(RecordSuffix = "Union")]
+            [assembly: StructUnionOptions(TemplateSuffix = "Union")]
 
             [StructUnion]
             public record ShapeUnion
@@ -425,5 +425,206 @@ public class DiagnosticTests
 
         await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
         await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0008");
+    }
+
+    [Test]
+    public async Task VariantNamedTag_ReportsSU0009()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Event
+            {
+                public static partial Event Tag(string value);
+                public static partial Event Click(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0009");
+    }
+
+    [Test]
+    public async Task CommonFieldNamedTag_ReportsSU0009()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public partial record EventRecord(int Tag)
+            {
+                public record Click(int X);
+                public record KeyPress(char Key);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0009");
+    }
+
+    [Test]
+    public async Task CustomTagPropertyName_AvoidsSU0009()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion(TagPropertyName = "Kind")]
+            public readonly partial struct Event
+            {
+                public static partial Event Tag(string value);
+                public static partial Event Click(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0009");
+    }
+
+    // ── SU0010: GeneratedName + Suffix conflict ──
+
+    [Test]
+    public async Task GeneratedNameAndSuffix_ReportsSU0010()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion("MyShape", TemplateSuffix = "Def")]
+            public record ShapeDef
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0010");
+    }
+
+    // ── Options cascade ──
+
+    [Test]
+    public async Task AssemblyLevelTagPropertyName_Cascades()
+    {
+        var source = """
+            using StructUnion;
+
+            [assembly: StructUnionOptions(TagPropertyName = "Kind")]
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+
+        var generatedSource = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .First(s => s.Contains("partial struct Shape"));
+
+        await Assert.That(generatedSource).Contains("Tags Kind =>");
+    }
+
+    [Test]
+    public async Task PerTypeTagPropertyName_OverridesAssembly()
+    {
+        var source = """
+            using StructUnion;
+
+            [assembly: StructUnionOptions(TagPropertyName = "Kind")]
+
+            [StructUnion(TagPropertyName = "Variant")]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+
+        var generatedSource = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .First(s => s.Contains("partial struct Shape"));
+
+        await Assert.That(generatedSource).Contains("Tags Variant =>");
+        await Assert.That(generatedSource).DoesNotContain("Tags Kind =>");
+    }
+
+    [Test]
+    public async Task SuffixOverridesAssemblyDefault()
+    {
+        var source = """
+            using StructUnion;
+
+            [assembly: StructUnionOptions(TemplateSuffix = "Record")]
+
+            [StructUnion(TemplateSuffix = "Def")]
+            public record ShapeDef
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        // "ShapeDef" minus "Def" suffix = struct named "Shape"
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+
+        var generatedSource = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .FirstOrDefault(s => s.Contains("partial struct Shape"));
+
+        await Assert.That(generatedSource).IsNotNull();
+    }
+
+    [Test]
+    public async Task EmptySuffix_NoTrimming()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion(TemplateSuffix = "")]
+            public record ShapeRecord
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+
+        // With empty suffix, no trimming — struct is named "ShapeRecord"
+        var generatedSource = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .FirstOrDefault(s => s.Contains("partial struct ShapeRecord"));
+
+        await Assert.That(generatedSource).IsNotNull();
     }
 }

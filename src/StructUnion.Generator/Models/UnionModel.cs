@@ -26,6 +26,8 @@ readonly record struct UnionModel(
     int TotalSize,
     int StructAlignment,
     GenerationMode Mode,
+    string TagPropertyName,
+    bool NestedAccessors,
     string TemplateTypeName = "",
     string TemplateTypeKeyword = "")
 {

@@ -32,11 +32,15 @@
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
 public readonly partial struct BigVariant : global::System.IEquatable<BigVariant>
 {
-    private const byte TagMany = 1;
-    private const byte TagSmall = 2;
+    public enum Tags : byte
+    {
+        Default = 0,
+        Many = 1,
+        Small = 2,
+    }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
-    private readonly byte _tag;
+    private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
     private readonly int _many_a;
@@ -71,7 +75,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     public static partial BigVariant Many(int a, int b, int c, int d, int e, int f, int g, int h)
     {
         var result = default(BigVariant);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagMany;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Many;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._many_a) = a;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._many_b) = b;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._many_c) = c;
@@ -86,25 +90,25 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     public static partial BigVariant Small(int x)
     {
         var result = default(BigVariant);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = TagSmall;
+        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.Small;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._small_x) = x;
         return result;
     }
 
     /// <summary>Gets the tag value identifying which variant is active.</summary>
-    public byte Tag => _tag;
+    public Tags Tag => _tag;
 
     /// <summary>Returns true if this is a default-constructed instance with no active variant.</summary>
-    public bool IsDefault => _tag == 0;
+    public bool IsDefault => _tag == Tags.Default;
 
-    public bool IsMany => _tag == TagMany;
-    public bool IsSmall => _tag == TagSmall;
+    public bool IsMany => _tag == Tags.Many;
+    public bool IsSmall => _tag == Tags.Small;
 
     public int ManyA
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_a;
         }
     }
@@ -112,7 +116,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_b;
         }
     }
@@ -120,7 +124,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_c;
         }
     }
@@ -128,7 +132,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_d;
         }
     }
@@ -136,7 +140,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_e;
         }
     }
@@ -144,7 +148,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_f;
         }
     }
@@ -152,7 +156,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_g;
         }
     }
@@ -160,7 +164,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagMany) ThrowInvalidCase(nameof(Many));
+            if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
             return _many_h;
         }
     }
@@ -168,14 +172,14 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         get
         {
-            if (_tag != TagSmall) ThrowInvalidCase(nameof(Small));
+            if (_tag != Tags.Small) ThrowInvalidCase(nameof(Small));
             return _small_x;
         }
     }
 
     public bool TryGetMany(out int a, out int b, out int c, out int d, out int e, out int f, out int g, out int h)
     {
-        if (_tag == TagMany)
+        if (_tag == Tags.Many)
         {
             a = _many_a;
             b = _many_b;
@@ -201,7 +205,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
 
     public bool TryGetSmall(out int x)
     {
-        if (_tag == TagSmall)
+        if (_tag == Tags.Small)
         {
             x = _small_x;
             return true;
@@ -215,8 +219,8 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         return _tag switch
         {
-            TagMany => many(_many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h),
-            TagSmall => small(_small_x),
+            Tags.Many => many(_many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h),
+            Tags.Small => small(_small_x),
             _ => ThrowUnknownTag<TResult>()
         };
     }
@@ -225,8 +229,8 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         switch (_tag)
         {
-            case TagMany: many(_many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h); break;
-            case TagSmall: small(_small_x); break;
+            case Tags.Many: many(_many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h); break;
+            case Tags.Small: small(_small_x); break;
             default: ThrowUnknownTag<int>(); break;
         }
     }
@@ -238,8 +242,8 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            TagMany => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_a, other._many_a) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_b, other._many_b) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_c, other._many_c) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_d, other._many_d) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_e, other._many_e) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_f, other._many_f) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_g, other._many_g) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_h, other._many_h),
-            TagSmall => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_small_x, other._small_x),
+            Tags.Many => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_a, other._many_a) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_b, other._many_b) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_c, other._many_c) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_d, other._many_d) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_e, other._many_e) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_f, other._many_f) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_g, other._many_g) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_h, other._many_h),
+            Tags.Small => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_small_x, other._small_x),
             _ => true
         };
     }
@@ -252,7 +256,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         hash.Add(_tag);
         switch (_tag)
         {
-            case TagMany:
+            case Tags.Many:
                 hash.Add(_many_a);
                 hash.Add(_many_b);
                 hash.Add(_many_c);
@@ -262,7 +266,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
                 hash.Add(_many_g);
                 hash.Add(_many_h);
                 break;
-            case TagSmall:
+            case Tags.Small:
                 hash.Add(_small_x);
                 break;
         }
@@ -276,8 +280,8 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     {
         return _tag switch
         {
-            TagMany => $"Many({_many_a}, {_many_b}, {_many_c}, {_many_d}, {_many_e}, {_many_f}, {_many_g}, {_many_h})",
-            TagSmall => $"Small({_small_x})",
+            Tags.Many => $"Many({_many_a}, {_many_b}, {_many_c}, {_many_d}, {_many_e}, {_many_f}, {_many_g}, {_many_h})",
+            Tags.Small => $"Small({_small_x})",
             _ => "<invalid>"
         };
     }
