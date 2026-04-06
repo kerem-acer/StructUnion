@@ -163,7 +163,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
             case Tags.Text: text(_text_Value); break;
             case Tags.Data: data(_data_Items); break;
             case Tags.Error: error(_error_Ex); break;
-            default: ThrowUnknownTag<int>(); break;
+            default: ThrowUnknownTag(); break;
         }
     }
 
@@ -216,5 +216,9 @@ public readonly partial struct Message : global::System.IEquatable<Message>
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static TResult ThrowUnknownTag<TResult>() =>
+        throw new global::System.InvalidOperationException("Unknown union tag.");
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownTag() =>
         throw new global::System.InvalidOperationException("Unknown union tag.");
 }

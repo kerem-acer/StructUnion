@@ -20,7 +20,7 @@
 /// <para><b>Variants</b></para>
 /// <code>
 /// Ok       4B
-/// Error   12B
+/// Error   16B
 /// </code>
 /// </remarks>
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
@@ -141,7 +141,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
         {
             case Tags.Ok: ok(_ok_Value); break;
             case Tags.Error: error(_error_Code, _error_Message); break;
-            default: ThrowUnknownTag<int>(); break;
+            default: ThrowUnknownTag(); break;
         }
     }
 
@@ -189,5 +189,9 @@ public readonly partial struct Result : global::System.IEquatable<Result>
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static TResult ThrowUnknownTag<TResult>() =>
+        throw new global::System.InvalidOperationException("Unknown union tag.");
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownTag() =>
         throw new global::System.InvalidOperationException("Unknown union tag.");
 }

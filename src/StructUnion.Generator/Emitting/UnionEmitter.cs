@@ -107,6 +107,15 @@ static class UnionEmitter
             sb.AppendLine("throw new global::System.InvalidOperationException(\"Unknown union tag.\");");
         }
 
+        sb.AppendLine();
+
+        sb.AppendLine("[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]");
+        sb.AppendLine("private static void ThrowUnknownTag() =>");
+        using (sb.Indent())
+        {
+            sb.AppendLine("throw new global::System.InvalidOperationException(\"Unknown union tag.\");");
+        }
+
         // Close struct
         sb.CloseBrace();
 

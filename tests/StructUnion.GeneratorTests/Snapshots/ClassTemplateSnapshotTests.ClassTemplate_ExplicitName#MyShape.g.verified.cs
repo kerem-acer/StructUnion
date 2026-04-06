@@ -126,7 +126,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
         {
             case Tags.Circle: circle(_circle_Radius); break;
             case Tags.Square: square(_square_Side); break;
-            default: ThrowUnknownTag<int>(); break;
+            default: ThrowUnknownTag(); break;
         }
     }
 
@@ -172,5 +172,9 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static TResult ThrowUnknownTag<TResult>() =>
+        throw new global::System.InvalidOperationException("Unknown union tag.");
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownTag() =>
         throw new global::System.InvalidOperationException("Unknown union tag.");
 }

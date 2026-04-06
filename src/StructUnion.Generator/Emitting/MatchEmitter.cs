@@ -79,7 +79,7 @@ static class MatchEmitter
                         model.VariantField(variant.Name, p.Name)));
                     sb.AppendLine($"case Tags.{variant.Name}: {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}); break;");
                 }
-                sb.AppendLine("default: ThrowUnknownTag<int>(); break;");
+                sb.AppendLine("default: ThrowUnknownTag(); break;");
             }
         }
     }

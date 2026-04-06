@@ -17,7 +17,7 @@
 /// <para><b>Variants</b></para>
 /// <code>
 /// Ok       4B
-/// Error   12B
+/// Error   16B
 /// </code>
 /// </remarks>
 public partial class ResultRecord { }

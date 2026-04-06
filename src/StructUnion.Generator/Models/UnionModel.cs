@@ -45,7 +45,8 @@ readonly record struct UnionModel(
             var prefix = Namespace.Length > 0 ? $"{Namespace}." : "";
             foreach (var ct in ContainingTypes)
             {
-                prefix += $"{ct}.";
+                var name = ct.Substring(ct.LastIndexOf(' ') + 1);
+                prefix += $"{name}.";
             }
 
             return $"{prefix}{Name}";

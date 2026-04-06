@@ -126,7 +126,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
         {
             case Tags.Celsius: celsius(_celsius_value); break;
             case Tags.Fahrenheit: fahrenheit(_fahrenheit_value); break;
-            default: ThrowUnknownTag<int>(); break;
+            default: ThrowUnknownTag(); break;
         }
     }
 
@@ -172,5 +172,9 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static TResult ThrowUnknownTag<TResult>() =>
+        throw new global::System.InvalidOperationException("Unknown union tag.");
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownTag() =>
         throw new global::System.InvalidOperationException("Unknown union tag.");
 }

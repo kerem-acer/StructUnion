@@ -141,7 +141,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
         {
             case Tags.Circle: circle(_circle_radius); break;
             case Tags.Rect: rect(_rect_w, _rect_h); break;
-            default: ThrowUnknownTag<int>(); break;
+            default: ThrowUnknownTag(); break;
         }
     }
 
@@ -189,5 +189,9 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static TResult ThrowUnknownTag<TResult>() =>
+        throw new global::System.InvalidOperationException("Unknown union tag.");
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownTag() =>
         throw new global::System.InvalidOperationException("Unknown union tag.");
 }

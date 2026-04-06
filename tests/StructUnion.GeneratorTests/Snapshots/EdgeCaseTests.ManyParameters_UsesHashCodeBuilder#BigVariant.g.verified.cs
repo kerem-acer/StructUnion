@@ -231,7 +231,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         {
             case Tags.Many: many(_many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h); break;
             case Tags.Small: small(_small_x); break;
-            default: ThrowUnknownTag<int>(); break;
+            default: ThrowUnknownTag(); break;
         }
     }
 
@@ -292,5 +292,9 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
 
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static TResult ThrowUnknownTag<TResult>() =>
+        throw new global::System.InvalidOperationException("Unknown union tag.");
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownTag() =>
         throw new global::System.InvalidOperationException("Unknown union tag.");
 }

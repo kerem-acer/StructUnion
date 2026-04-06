@@ -128,7 +128,7 @@ namespace MyApp.Models
             {
                 case Tags.Ok: ok(_ok_value); break;
                 case Tags.Error: error(_error_code); break;
-                default: ThrowUnknownTag<int>(); break;
+                default: ThrowUnknownTag(); break;
             }
         }
 
@@ -174,6 +174,10 @@ namespace MyApp.Models
 
         [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static TResult ThrowUnknownTag<TResult>() =>
+            throw new global::System.InvalidOperationException("Unknown union tag.");
+
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void ThrowUnknownTag() =>
             throw new global::System.InvalidOperationException("Unknown union tag.");
     }
 }

@@ -299,6 +299,17 @@ static class UnionParser
     static void CheckLargeStruct(
         UnionModel model, Location location, ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
+        var commonSize = 0;
+        foreach (var field in model.CommonFields)
+        {
+            if (field.Size < 0)
+            {
+                return; // unknowable, skip check
+            }
+
+            commonSize += field.Size;
+        }
+
         var maxPayload = 0;
         foreach (var variant in model.Variants)
         {
@@ -315,11 +326,12 @@ static class UnionParser
             maxPayload = Math.Max(maxPayload, payload);
         }
 
-        if (maxPayload > LargeStructThreshold)
+        var totalPayload = commonSize + maxPayload;
+        if (totalPayload > LargeStructThreshold)
         {
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.LargeStructWarning, location,
-                model.Name, maxPayload.ToString()));
+                model.Name, totalPayload.ToString()));
         }
     }
 

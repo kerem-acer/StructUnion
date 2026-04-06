@@ -191,13 +191,14 @@ static class LayoutEmitter
 
     static int ComputeVariantPayload(VariantModel variant)
     {
-        var total = 0;
+        var pos = 0;
         foreach (var param in variant.Parameters)
         {
-            total += param.Size;
+            pos = TypeClassifier.Align(pos, param.Alignment);
+            pos += param.Size;
         }
 
-        return total;
+        return pos;
     }
 
 }

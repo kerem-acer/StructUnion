@@ -27,14 +27,20 @@ sealed class StructUnionOptionsAttribute : Attribute
     /// <summary>
     /// When true, generates implicit conversion operators for single-parameter variants
     /// with unique parameter types.
-    /// Can be overridden per-type via <see cref="StructUnionAttribute.EnableImplicitConversions"/>.
     /// </summary>
+    /// <remarks>
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// Can be overridden per-type via <see cref="StructUnionAttribute.EnableImplicitConversions"/>.
+    /// </remarks>
     public bool EnableImplicitConversions { get; set; }
 
     /// <summary>
     /// When true, generates a nested Cases class with a readonly struct per variant
     /// and As{Variant} accessor properties instead of flat {Variant}{Param} properties.
-    /// Can be overridden per-type via <see cref="StructUnionAttribute.NestedAccessors"/>.
     /// </summary>
+    /// <remarks>
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// Can be overridden per-type via <see cref="StructUnionAttribute.NestedAccessors"/>.
+    /// </remarks>
     public bool NestedAccessors { get; set; }
 }
