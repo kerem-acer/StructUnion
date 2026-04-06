@@ -1,0 +1,337 @@
+# Global analyzer configuration
+# This file configures analyzer severity for all file types including Razor.
+# .editorconfig rules take precedence for .cs files.
+is_global = true
+
+# Baseline: treat all analyzer diagnostics as errors
+dotnet_analyzer_diagnostic.severity = error
+
+# Compiler null-safety warnings (not covered by dotnet_analyzer_diagnostic baseline)
+dotnet_diagnostic.CS8600.severity = error # Converting null literal or possible null value to non-nullable type
+dotnet_diagnostic.CS8602.severity = error # Dereference of a possibly null reference
+dotnet_diagnostic.CS8603.severity = error # Possible null reference return
+dotnet_diagnostic.CS8604.severity = error # Possible null reference argument
+
+# Diagnostic severities (reviewed and approved per diagnostics.md)
+
+# Microsoft Code Analysis (CA)
+dotnet_diagnostic.CA1000.severity = suggestion
+dotnet_diagnostic.CA1036.severity = none
+dotnet_diagnostic.CA1304.severity = suggestion
+dotnet_diagnostic.CA1305.severity = suggestion
+dotnet_diagnostic.CA1311.severity = suggestion
+dotnet_diagnostic.CA1710.severity = none
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1720.severity = none
+dotnet_diagnostic.CA1725.severity = warning
+dotnet_diagnostic.CA1816.severity = warning
+dotnet_diagnostic.CA1822.severity = suggestion
+dotnet_diagnostic.CA1848.severity = suggestion
+dotnet_diagnostic.CA1852.severity = suggestion
+dotnet_diagnostic.CA1863.severity = suggestion
+dotnet_diagnostic.CA1873.severity = none
+dotnet_diagnostic.CA2016.severity = warning
+
+# Meziantou Analyzer (MA)
+dotnet_diagnostic.MA0001.severity = suggestion
+dotnet_diagnostic.MA0002.severity = suggestion
+dotnet_diagnostic.MA0003.severity = none
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0006.severity = none
+dotnet_diagnostic.MA0007.severity = none
+dotnet_diagnostic.MA0008.severity = none
+dotnet_diagnostic.MA0009.severity = warning
+dotnet_diagnostic.MA0010.severity = warning
+dotnet_diagnostic.MA0011.severity = suggestion
+dotnet_diagnostic.MA0015.severity = warning
+dotnet_diagnostic.MA0016.severity = none
+dotnet_diagnostic.MA0017.severity = warning
+dotnet_diagnostic.MA0018.severity = none
+dotnet_diagnostic.MA0020.severity = suggestion
+dotnet_diagnostic.MA0021.severity = none
+dotnet_diagnostic.MA0023.severity = suggestion
+dotnet_diagnostic.MA0025.severity = none
+dotnet_diagnostic.MA0026.severity = none
+dotnet_diagnostic.MA0029.severity = suggestion
+dotnet_diagnostic.MA0031.severity = suggestion
+dotnet_diagnostic.MA0036.severity = warning
+dotnet_diagnostic.MA0038.severity = none
+dotnet_diagnostic.MA0039.severity = none
+dotnet_diagnostic.MA0040.severity = none
+dotnet_diagnostic.MA0041.severity = none
+dotnet_diagnostic.MA0042.severity = error
+dotnet_diagnostic.MA0044.severity = warning
+dotnet_diagnostic.MA0046.severity = none
+dotnet_diagnostic.MA0047.severity = warning
+dotnet_diagnostic.MA0048.severity = none
+dotnet_diagnostic.MA0051.severity = none
+dotnet_diagnostic.MA0052.severity = warning
+dotnet_diagnostic.MA0053.severity = suggestion
+dotnet_diagnostic.MA0057.severity = warning
+dotnet_diagnostic.MA0061.severity = warning
+dotnet_diagnostic.MA0067.severity = warning
+dotnet_diagnostic.MA0071.severity = warning
+dotnet_diagnostic.MA0073.severity = warning
+dotnet_diagnostic.MA0074.severity = suggestion
+dotnet_diagnostic.MA0075.severity = warning
+dotnet_diagnostic.MA0076.severity = suggestion
+dotnet_diagnostic.MA0078.severity = warning
+dotnet_diagnostic.MA0079.severity = warning
+dotnet_diagnostic.MA0089.severity = none
+dotnet_diagnostic.MA0098.severity = warning
+dotnet_diagnostic.MA0099.severity = warning
+dotnet_diagnostic.MA0120.severity = warning
+dotnet_diagnostic.MA0134.severity = warning
+dotnet_diagnostic.MA0136.severity = none
+dotnet_diagnostic.MA0158.severity = warning
+dotnet_diagnostic.MA0159.severity = warning
+dotnet_diagnostic.MA0176.severity = none
+dotnet_diagnostic.MA0178.severity = warning
+dotnet_diagnostic.MA0179.severity = warning
+dotnet_diagnostic.MA0182.severity = warning
+dotnet_diagnostic.MA0183.severity = warning
+
+# MongoDB Analyzer
+dotnet_diagnostic.MABuilders1001.severity = suggestion
+dotnet_diagnostic.MALinq1001.severity = suggestion
+dotnet_diagnostic.MALinq2001.severity = none
+dotnet_diagnostic.MCA2016.severity = none
+
+# Roslynator (RCS)
+dotnet_diagnostic.RCS1015.severity = warning
+dotnet_diagnostic.RCS1021.severity = suggestion
+dotnet_diagnostic.RCS1031.severity = none
+dotnet_diagnostic.RCS1037.severity = suggestion
+dotnet_diagnostic.RCS1049.severity = none
+dotnet_diagnostic.RCS1061.severity = suggestion
+dotnet_diagnostic.RCS1068.severity = warning
+dotnet_diagnostic.RCS1069.severity = warning
+dotnet_diagnostic.RCS1071.severity = warning
+dotnet_diagnostic.RCS1073.severity = warning
+dotnet_diagnostic.RCS1074.severity = none
+dotnet_diagnostic.RCS1077.severity = suggestion
+dotnet_diagnostic.RCS1084.severity = warning
+dotnet_diagnostic.RCS1085.severity = warning
+dotnet_diagnostic.RCS1097.severity = none
+dotnet_diagnostic.RCS1102.severity = none
+dotnet_diagnostic.RCS1110.severity = none
+dotnet_diagnostic.RCS1112.severity = none
+dotnet_diagnostic.RCS1118.severity = warning
+dotnet_diagnostic.RCS1123.severity = warning
+dotnet_diagnostic.RCS1124.severity = none
+dotnet_diagnostic.RCS1134.severity = warning
+dotnet_diagnostic.RCS1146.severity = suggestion
+dotnet_diagnostic.RCS1154.severity = none
+dotnet_diagnostic.RCS1156.severity = suggestion
+dotnet_diagnostic.RCS1158.severity = none
+dotnet_diagnostic.RCS1160.severity = none
+dotnet_diagnostic.RCS1161.severity = warning
+dotnet_diagnostic.RCS1163.severity = suggestion
+dotnet_diagnostic.RCS1164.severity = warning
+dotnet_diagnostic.RCS1165.severity = warning
+dotnet_diagnostic.RCS1168.severity = none
+dotnet_diagnostic.RCS1169.severity = warning
+dotnet_diagnostic.RCS1170.severity = silent
+dotnet_diagnostic.RCS1179.severity = warning
+dotnet_diagnostic.RCS1180.severity = warning
+dotnet_diagnostic.RCS1181.severity = none
+dotnet_diagnostic.RCS1189.severity = none
+dotnet_diagnostic.RCS1194.severity = none
+dotnet_diagnostic.RCS1196.severity = warning
+dotnet_diagnostic.RCS1201.severity = none
+dotnet_diagnostic.RCS1203.severity = none
+dotnet_diagnostic.RCS1089.severity = none
+dotnet_diagnostic.RCS1205.severity = suggestion
+dotnet_diagnostic.RCS1209.severity = warning
+dotnet_diagnostic.RCS1212.severity = none
+dotnet_diagnostic.RCS1213.severity = warning
+dotnet_diagnostic.RCS1214.severity = warning
+dotnet_diagnostic.RCS1217.severity = none
+dotnet_diagnostic.RCS1221.severity = warning
+dotnet_diagnostic.RCS1225.severity = none
+dotnet_diagnostic.RCS1235.severity = warning
+dotnet_diagnostic.RCS1238.severity = suggestion
+dotnet_diagnostic.RCS1249.severity = warning
+dotnet_diagnostic.RCS1251.severity = warning
+dotnet_diagnostic.RCS1261.severity = warning
+dotnet_diagnostic.RCS1141.severity = suggestion
+dotnet_diagnostic.RCS1142.severity = suggestion
+dotnet_diagnostic.RCS1139.severity = none
+dotnet_diagnostic.RCS1140.severity = none
+dotnet_diagnostic.RCS1226.severity = none
+dotnet_diagnostic.RCS1228.severity = none
+dotnet_diagnostic.RCS1243.severity = none
+dotnet_diagnostic.RCS1263.severity = warning
+
+# SonarAnalyzer (S)
+dotnet_diagnostic.S101.severity = none
+dotnet_diagnostic.S108.severity = none
+dotnet_diagnostic.S125.severity = suggestion
+dotnet_diagnostic.S927.severity = none
+dotnet_diagnostic.S1006.severity = none
+dotnet_diagnostic.S1066.severity = none
+dotnet_diagnostic.S1075.severity = none
+dotnet_diagnostic.S1118.severity = none
+dotnet_diagnostic.S1125.severity = none
+dotnet_diagnostic.S1133.severity = none
+dotnet_diagnostic.S1135.severity = none
+dotnet_diagnostic.S1144.severity = none
+dotnet_diagnostic.S1172.severity = none
+dotnet_diagnostic.S1199.severity = none
+dotnet_diagnostic.S1481.severity = warning
+dotnet_diagnostic.S1643.severity = warning
+dotnet_diagnostic.S1694.severity = suggestion
+dotnet_diagnostic.S1751.severity = warning
+dotnet_diagnostic.S1871.severity = warning
+dotnet_diagnostic.S1905.severity = warning
+dotnet_diagnostic.S1939.severity = warning
+dotnet_diagnostic.S2068.severity = error
+dotnet_diagnostic.S2094.severity = none
+dotnet_diagnostic.S2139.severity = suggestion
+dotnet_diagnostic.S2219.severity = none
+dotnet_diagnostic.S2306.severity = error
+dotnet_diagnostic.S2325.severity = none
+dotnet_diagnostic.S2326.severity = none
+dotnet_diagnostic.S2328.severity = error
+dotnet_diagnostic.S2365.severity = warning
+dotnet_diagnostic.S2368.severity = none
+dotnet_diagnostic.S2696.severity = none
+dotnet_diagnostic.S2743.severity = none
+dotnet_diagnostic.S2933.severity = none
+dotnet_diagnostic.S2955.severity = none
+dotnet_diagnostic.S3011.severity = warning
+dotnet_diagnostic.S3218.severity = warning
+dotnet_diagnostic.S3220.severity = warning
+dotnet_diagnostic.S3236.severity = warning
+dotnet_diagnostic.S3260.severity = none
+dotnet_diagnostic.S3267.severity = none
+dotnet_diagnostic.S3358.severity = none
+dotnet_diagnostic.S3376.severity = warning
+dotnet_diagnostic.S3398.severity = suggestion
+dotnet_diagnostic.S3442.severity = none
+dotnet_diagnostic.S3458.severity = none
+dotnet_diagnostic.S3459.severity = none
+dotnet_diagnostic.S3626.severity = none
+dotnet_diagnostic.S3875.severity = none
+dotnet_diagnostic.S3877.severity = warning
+dotnet_diagnostic.S3881.severity = none
+dotnet_diagnostic.S3903.severity = warning
+dotnet_diagnostic.S3925.severity = none
+dotnet_diagnostic.S3928.severity = none
+dotnet_diagnostic.S3963.severity = suggestion
+dotnet_diagnostic.S3993.severity = none
+dotnet_diagnostic.S4035.severity = warning
+dotnet_diagnostic.S4136.severity = suggestion
+dotnet_diagnostic.S4144.severity = warning
+dotnet_diagnostic.S4487.severity = warning
+dotnet_diagnostic.S4581.severity = warning
+dotnet_diagnostic.S4663.severity = warning
+dotnet_diagnostic.S5034.severity = error
+dotnet_diagnostic.S6562.severity = warning
+dotnet_diagnostic.S6580.severity = none
+dotnet_diagnostic.S6608.severity = warning
+dotnet_diagnostic.S6610.severity = warning
+dotnet_diagnostic.S6667.severity = warning
+dotnet_diagnostic.S6672.severity = warning
+dotnet_diagnostic.S6931.severity = none
+dotnet_diagnostic.S6960.severity = none
+dotnet_diagnostic.S6964.severity = none
+dotnet_diagnostic.S6966.severity = warning
+dotnet_diagnostic.S1186.severity = warning
+dotnet_diagnostic.S1121.severity = none
+
+# IDE (Code Style)
+dotnet_diagnostic.IDE0008.severity = none
+dotnet_diagnostic.IDE0022.severity = none
+dotnet_diagnostic.IDE0010.severity = none
+dotnet_diagnostic.IDE0072.severity = none
+dotnet_diagnostic.IDE0058.severity = none
+dotnet_diagnostic.IDE0130.severity = none
+dotnet_diagnostic.IDE0023.severity = none
+dotnet_diagnostic.IDE0024.severity = none
+dotnet_diagnostic.IDE0061.severity = none
+dotnet_diagnostic.IDE0270.severity = none
+dotnet_diagnostic.IDE0021.severity = none
+dotnet_diagnostic.IDE0074.severity = none
+dotnet_diagnostic.IDE0046.severity = suggestion
+dotnet_diagnostic.IDE0057.severity = suggestion
+dotnet_diagnostic.IDE0066.severity = suggestion
+dotnet_diagnostic.IDE0305.severity = suggestion
+dotnet_diagnostic.IDE0045.severity = suggestion
+dotnet_diagnostic.IDE0078.severity = suggestion
+dotnet_diagnostic.IDE0048.severity = suggestion
+dotnet_diagnostic.IDE0037.severity = suggestion
+dotnet_diagnostic.IDE0055.severity = suggestion
+dotnet_diagnostic.IDE0011.severity = warning
+dotnet_diagnostic.IDE0200.severity = warning
+dotnet_diagnostic.IDE0301.severity = warning
+dotnet_diagnostic.IDE0028.severity = warning
+dotnet_diagnostic.IDE0300.severity = warning
+dotnet_diagnostic.IDE0041.severity = warning
+dotnet_diagnostic.IDE0040.severity = warning
+dotnet_diagnostic.IDE0017.severity = warning
+dotnet_diagnostic.IDE0039.severity = warning
+dotnet_diagnostic.IDE0350.severity = warning
+dotnet_diagnostic.IDE0260.severity = warning
+dotnet_diagnostic.IDE0065.severity = warning
+dotnet_diagnostic.IDE0004.severity = warning
+dotnet_diagnostic.IDE0038.severity = warning
+
+# BannedApiAnalyzers (RS)
+dotnet_diagnostic.RS0030.severity = error
+dotnet_diagnostic.RS0031.severity = warning
+
+# Microsoft.VisualStudio.Threading.Analyzers (VSTHRD)
+# VS-specific rules (not applicable to ASP.NET Core)
+dotnet_diagnostic.VSTHRD002.severity = none
+dotnet_diagnostic.VSTHRD003.severity = none
+dotnet_diagnostic.VSTHRD011.severity = none
+# Overlapping rules (already covered by existing analyzers)
+dotnet_diagnostic.VSTHRD100.severity = none
+dotnet_diagnostic.VSTHRD103.severity = none
+dotnet_diagnostic.VSTHRD111.severity = none
+dotnet_diagnostic.VSTHRD114.severity = none
+dotnet_diagnostic.VSTHRD200.severity = none
+
+# ErrorProne.NET (EPC/ERP)
+# Overlapping rules (already covered)
+dotnet_diagnostic.EPC14.severity = none
+dotnet_diagnostic.EPC15.severity = none
+dotnet_diagnostic.EPC27.severity = none
+# Unique valuable rules
+dotnet_diagnostic.EPC11.severity = warning
+dotnet_diagnostic.EPC12.severity = suggestion
+dotnet_diagnostic.EPC13.severity = warning
+dotnet_diagnostic.EPC16.severity = warning
+dotnet_diagnostic.EPC17.severity = none
+dotnet_diagnostic.EPC18.severity = warning
+dotnet_diagnostic.EPC19.severity = warning
+dotnet_diagnostic.EPC20.severity = warning
+dotnet_diagnostic.EPC24.severity = warning
+dotnet_diagnostic.EPC26.severity = warning
+dotnet_diagnostic.EPC28.severity = warning
+dotnet_diagnostic.EPC29.severity = warning
+dotnet_diagnostic.EPC30.severity = warning
+dotnet_diagnostic.EPC31.severity = warning
+dotnet_diagnostic.EPC32.severity = warning
+dotnet_diagnostic.EPC33.severity = warning
+dotnet_diagnostic.EPC34.severity = warning
+dotnet_diagnostic.EPC35.severity = warning
+dotnet_diagnostic.EPC36.severity = warning
+dotnet_diagnostic.EPC37.severity = suggestion
+dotnet_diagnostic.ERP021.severity = warning
+dotnet_diagnostic.ERP022.severity = none
+dotnet_diagnostic.ERP031.severity = warning
+dotnet_diagnostic.ERP041.severity = warning
+dotnet_diagnostic.ERP042.severity = warning
+
+# XML Documentation Comments (CS)
+dotnet_diagnostic.CS1570.severity = error
+dotnet_diagnostic.CS1572.severity = warning
+dotnet_diagnostic.CS1573.severity = suggestion
+dotnet_diagnostic.CS1574.severity = warning
+dotnet_diagnostic.CS1587.severity = warning
+dotnet_diagnostic.CS1591.severity = none
+
+

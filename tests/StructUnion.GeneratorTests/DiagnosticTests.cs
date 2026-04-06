@@ -1,0 +1,429 @@
+using Microsoft.CodeAnalysis;
+
+namespace StructUnion.GeneratorTests;
+
+public class DiagnosticTests
+{
+    [Test]
+    public async Task NonPartialStruct_ReportsSU0001()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly struct Shape
+            {
+                public static Shape Circle(double radius) => default;
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0001");
+    }
+
+    [Test]
+    public async Task NonReadonlyStruct_ReportsSU0002()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public partial struct Shape
+            {
+                public static partial Shape Circle(double radius);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0002");
+    }
+
+    [Test]
+    public async Task NoVariantMethods_ReportsSU0003()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public int GetValue() => 42;
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0003");
+    }
+
+    [Test]
+    public async Task MethodReturnsWrongType_ReportsSU0004()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial int NotAVariant(double radius);
+                public static partial Shape Circle(double radius);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        // Circle is still valid, so code should be generated
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0004");
+    }
+
+    [Test]
+    public async Task RefParameter_ReportsSU0005()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(ref double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        // Rectangle is still valid, so code should be generated
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0005");
+    }
+
+    [Test]
+    public async Task InParameter_ReportsSU0005()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(in double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0005");
+    }
+
+    [Test]
+    public async Task OutParameter_ReportsSU0005()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(out double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0005");
+    }
+
+    [Test]
+    public async Task LargeStruct_ReportsSU0007()
+    {
+        // 9 doubles = 72 bytes > 64 byte threshold
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct BigUnion
+            {
+                public static partial BigUnion A(
+                    double f1, double f2, double f3,
+                    double f4, double f5, double f6,
+                    double f7, double f8, double f9);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        // Should still generate code (it's a warning, not error)
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).Contains(d =>
+            d.Id == "SU0007" && d.Severity == DiagnosticSeverity.Warning);
+    }
+
+    [Test]
+    public async Task SmallStruct_DoesNotReportSU0007()
+    {
+        // 2 doubles = 16 bytes, well under threshold
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0007");
+    }
+
+    [Test]
+    public async Task NoVariantsInTemplate_ReportsSU0003()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public record ShapeTemplate
+            {
+                // No nested types = no variants
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0003");
+    }
+
+    [Test]
+    public async Task TooManyVariants_ReportsSU0006()
+    {
+        // Generate 256 static partial methods to exceed the 255 max
+        var methods = string.Join("\n",
+            Enumerable.Range(0, 256)
+                .Select(i => $"        public static partial TooMany V{i}(int x);"));
+
+        var source = $$"""
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct TooMany
+            {
+            {{methods}}
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0006");
+    }
+
+    [Test]
+    public async Task TemplateWithPrimaryConstructor_GeneratesWithCommonFields()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public record ResultTemplate(System.Guid Id)
+            {
+                public record Ok(string Value);
+                public record Error(string Message);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d =>
+            d.Severity == DiagnosticSeverity.Error || d.Severity == DiagnosticSeverity.Warning);
+    }
+
+    [Test]
+    public async Task RecordSuffixSetting_IsRespected()
+    {
+        var source = """
+            using StructUnion;
+
+            [assembly: StructUnionSettings(RecordSuffix = "Union")]
+
+            [StructUnion]
+            public record ShapeUnion
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        // "ShapeUnion" minus "Union" suffix = struct named "Shape"
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+    }
+
+    [Test]
+    public async Task GenericWithInterfaceConstraint_Generates()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Wrapper<T> where T : System.IDisposable
+            {
+                public static partial Wrapper<T> Some(T value);
+                public static partial Wrapper<T> None();
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+    }
+
+    // ── Layout XML doc in generated code ──
+
+    [Test]
+    public async Task ExplicitLayout_GeneratesXmlDocWithLayout()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        var generatedSource = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .First(s => s.Contains("partial struct Shape"));
+
+        await Assert.That(generatedSource).Contains("/// <remarks>");
+        await Assert.That(generatedSource).Contains("bytes");
+        await Assert.That(generatedSource).Contains("Circle");
+        await Assert.That(generatedSource).Contains("Rectangle");
+    }
+
+    [Test]
+    public async Task TemplateRecord_GeneratesXmlDocOnTemplate()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public partial record ShapeRecord
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        var templateDoc = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .FirstOrDefault(s => s.Contains("partial record ShapeRecord"));
+
+        await Assert.That(templateDoc).IsNotNull();
+        await Assert.That(templateDoc).Contains("/// <remarks>");
+        await Assert.That(templateDoc).Contains("bytes");
+    }
+
+    [Test]
+    public async Task AutoLayout_DoesNotGenerateLayoutDoc()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Option<T>
+            {
+                public static partial Option<T> Some(T value);
+                public static partial Option<T> None();
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        var generatedSource = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .First(s => s.Contains("partial struct Option"));
+
+        await Assert.That(generatedSource).DoesNotContain("/// <remarks>");
+    }
+
+    [Test]
+    public async Task CaseInsensitiveVariantNameCollision_ReportsSU0008()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct Result
+            {
+                public static partial Result Ok(int value);
+                public static partial Result OK(string message);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0008");
+    }
+
+    [Test]
+    public async Task CaseInsensitiveVariantNameCollision_Template_ReportsSU0008()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public record ResultRecord
+            {
+                public record Ok(int Value);
+                public record OK(string Message);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0008");
+    }
+}
