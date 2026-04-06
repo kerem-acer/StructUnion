@@ -4,7 +4,7 @@ namespace StructUnion;
 /// Assembly-level attribute to configure default options for StructUnion source generation.
 /// Per-type <see cref="StructUnionAttribute"/> values take precedence over these defaults.
 /// </summary>
-[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Assembly)]
 #if STRUCT_UNION_GENERATOR
 internal
 #else

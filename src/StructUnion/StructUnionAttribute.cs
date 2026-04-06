@@ -1,6 +1,6 @@
 namespace StructUnion;
 
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, Inherited = false)]
 #if STRUCT_UNION_GENERATOR
 internal
 #else
