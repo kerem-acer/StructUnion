@@ -9,7 +9,7 @@ A C# source generator that creates zero-allocation discriminated unions (tagged 
 - **Rich generated API** — factory methods, `Is*` checks, property accessors, `TryGet*`, `Match`, equality operators, and `ToString`
 - **Implicit conversions** — single-parameter variants with unique types get implicit conversion operators
 - **Tag enum** — generates a nested `Tags` enum for use with `switch` expressions
-- **Compile-time diagnostics** — 11 analyzer rules (SU0001–SU0011) catch mistakes at build time
+- **Compile-time diagnostics** — 12 analyzer rules (SU0001–SU0012) catch mistakes at build time
 - **Wide compatibility** — targets netstandard2.0, netstandard2.1, net6.0, net8.0, and net10.0
 
 ## Quick Start
@@ -103,9 +103,34 @@ public readonly partial struct Payload
 }
 ```
 
+### Generic Unions
+
+Generic type parameters are fully supported:
+
+```csharp
+[StructUnion]
+public readonly partial struct Option<T>
+{
+    public static partial Option<T> Some(T value);
+    public static partial Option<T> None();
+}
+
+[StructUnion]
+public readonly partial struct Result<TOk, TError>
+{
+    public static partial Result<TOk, TError> Ok(TOk value);
+    public static partial Result<TOk, TError> Error(TError error);
+}
+
+Option<int> opt = Option<int>.Some(42);
+Result<string, Exception> result = Result<string, Exception>.Ok("hello");
+```
+
+Generic unions use sequential (`Auto`) layout since type sizes are unknown at generation time. Constraints (`where T : struct`, `where T : class`, etc.) are preserved on the generated struct.
+
 ### Record Template API
 
-Define variants as nested records inside a `partial record`. This style supports **common fields** shared across all variants:
+Define variants as nested types inside a `partial record` or `partial class`. This style supports **common fields** shared across all variants:
 
 ```csharp
 [StructUnion]
@@ -162,6 +187,7 @@ For each union, the generator produces:
 | Property accessor | `shape.CircleRadius` | Gets the variant's field value (throws if wrong variant) |
 | `TryGet*` method | `shape.TryGetCircle(out var r)` | Returns `true` and extracts fields via `out` parameters |
 | `Match<T>` | `shape.Match(...)` | Exhaustive pattern match returning `T` |
+| `Match<TState, T>` | `shape.Match(state, ...)` | Stateful match (avoids closure allocations) |
 | `Match` (void) | `shape.Match(...)` | Exhaustive pattern match with `Action` delegates |
 | `==` / `!=` | `a == b` | Structural equality by variant tag and field values |
 | `Equals` / `GetHashCode` | `a.Equals(b)` | Implements `IEquatable<T>` |
@@ -173,10 +199,16 @@ For each union, the generator produces:
 
 ### Custom Generated Name
 
+Override the generated struct name for record templates:
+
 ```csharp
-[StructUnion("MyShape")]
-public readonly partial struct ShapeDefinition { ... }
-// Generates a struct named "MyShape" instead of "ShapeDefinition"
+[StructUnion("Shape")]
+public partial record ShapeData
+{
+    public record Circle(double Radius);
+    public record Rectangle(double Length, double Width);
+}
+// Generates a struct named "Shape" instead of deriving from "ShapeData"
 ```
 
 ### Disable Implicit Conversions
@@ -237,12 +269,16 @@ public static class Cases
 }
 ```
 
-### Custom Record Suffix
+### Assembly-Level Defaults
 
-By default, the generator strips `"Record"` from record template names. Override at assembly level:
+Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes override these when set:
 
 ```csharp
-[assembly: StructUnionOptions(TemplateSuffix = "Template")]
+[assembly: StructUnionOptions(
+    TemplateSuffix = "Template",          // strip "Template" instead of "Record" from template names
+    TagPropertyName = "Kind",             // default tag property name for all unions
+    EnableImplicitConversions = false,    // disable implicit conversions project-wide
+    NestedAccessors = true)]              // enable nested accessors project-wide
 ```
 
 ## Diagnostics
@@ -260,6 +296,7 @@ By default, the generator strips `"Record"` from record template names. Override
 | SU0009 | Error | Tag property name conflicts with a variant or common field name |
 | SU0010 | Error | `GeneratedName` and `TemplateSuffix` cannot both be set |
 | SU0011 | Error | Variant name is reserved (conflicts with generated `Tags` enum) |
+| SU0012 | Error | Invalid C# identifier for `GeneratedName` or `TagPropertyName` |
 
 ## How It Works
 
@@ -271,6 +308,13 @@ The generator produces structs with `[StructLayout(LayoutKind.Explicit)]` where 
 - The struct size equals: tag + padding + max(variant payload sizes)
 
 For example, `Shape` with three double-based variants occupies just 24 bytes: 1 byte tag + 7 bytes padding + 16 bytes payload (2 doubles).
+
+When the generator cannot determine field sizes at compile time — generic type parameters or managed value types (e.g., `ValueTuple<string, int>`) — it falls back to sequential (`Auto`) layout. The generated API is identical; only the internal memory strategy differs.
+
+## Requirements
+
+- .NET SDK 10.0 or later (for building and testing)
+- Consumers of the NuGet package can target netstandard2.0+, net6.0+, net8.0+, or net10.0+
 
 ## Building
 
