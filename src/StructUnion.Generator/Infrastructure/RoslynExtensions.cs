@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using StructUnion;
 using StructUnion.Generator.Models;
 
 namespace StructUnion.Generator.Infrastructure;
@@ -32,7 +31,10 @@ static class RoslynExtensions
         while (parent is not null)
         {
             var keyword = parent.IsValueType ? "struct" : parent.IsRecord ? "record class" : "class";
-            result.Insert(0, $"partial {keyword} {parent.Name}");
+            var typeParams = parent.TypeParameters.Length > 0
+                ? $"<{string.Join(", ", parent.TypeParameters.Select(tp => tp.Name))}>"
+                : "";
+            result.Insert(0, $"partial {keyword} {parent.Name}{typeParams}");
             parent = parent.ContainingType;
         }
         return result.ToImmutable().ToEquatableArray();
@@ -132,7 +134,7 @@ static class RoslynExtensions
 
         foreach (var attr in compilation.Assembly.GetAttributes())
         {
-            if (attr.AttributeClass?.ToDisplayString() == typeof(StructUnionOptionsAttribute).FullName!)
+            if (attr.AttributeClass?.ToDisplayString() == typeof(StructUnionOptionsAttribute).FullName)
             {
                 foreach (var named in attr.NamedArguments)
                 {

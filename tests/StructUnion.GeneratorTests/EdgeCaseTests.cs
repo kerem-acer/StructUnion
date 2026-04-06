@@ -24,6 +24,27 @@ public class EdgeCaseTests
     }
 
     [Test]
+    public Task NestedInGenericClass()
+    {
+        var source = """
+            using StructUnion;
+
+            public partial class Outer<T>
+            {
+                [StructUnion]
+                public readonly partial struct Inner
+                {
+                    public static partial Inner A(T value);
+                    public static partial Inner B(int count);
+                }
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        return Verify(driver);
+    }
+
+    [Test]
     public Task MixedValueTypes()
     {
         var source = """
@@ -92,6 +113,43 @@ public class EdgeCaseTests
                     int a, int b, int c, int d,
                     int e, int f, int g, int h);
                 public static partial BigVariant Small(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        return Verify(driver);
+    }
+
+    [Test]
+    public Task NestedAccessors_GeneratesCasesClass()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion(NestedAccessors = true)]
+            public readonly partial struct DrawCmd
+            {
+                public static partial DrawCmd MoveTo(double x, double y);
+                public static partial DrawCmd LineTo(double x, double y);
+                public static partial DrawCmd Close();
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        return Verify(driver);
+    }
+
+    [Test]
+    public Task CustomTagPropertyName()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion(TagPropertyName = "Kind")]
+            public readonly partial struct Event
+            {
+                public static partial Event Tag(string value);
+                public static partial Event Click(int x, int y);
             }
             """;
 

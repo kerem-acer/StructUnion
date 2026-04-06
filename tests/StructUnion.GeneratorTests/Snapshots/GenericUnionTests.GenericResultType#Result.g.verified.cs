@@ -14,8 +14,11 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
         Error = 2,
     }
 
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly TOk _ok_value;
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly TError _error_error;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -142,6 +145,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
         {
             Tags.Ok => $"Ok({_ok_value})",
             Tags.Error => $"Error({_error_error})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

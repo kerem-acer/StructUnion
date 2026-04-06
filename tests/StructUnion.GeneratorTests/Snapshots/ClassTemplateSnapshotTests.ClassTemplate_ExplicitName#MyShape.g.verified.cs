@@ -22,7 +22,7 @@
 /// Square    8B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
 public readonly partial struct MyShape : global::System.IEquatable<MyShape>
 {
     public enum Tags : byte
@@ -33,12 +33,15 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _circle_Radius;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _square_Side;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -162,6 +165,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
         {
             Tags.Circle => $"Circle({_circle_Radius})",
             Tags.Square => $"Square({_square_Side})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

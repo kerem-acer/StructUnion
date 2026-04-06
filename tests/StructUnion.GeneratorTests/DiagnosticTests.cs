@@ -627,4 +627,118 @@ public class DiagnosticTests
 
         await Assert.That(generatedSource).IsNotNull();
     }
+
+    // ── SU0011: Reserved variant name ──
+
+    [Test]
+    public async Task VariantNamedDefault_ReportsSU0011()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct MyUnion
+            {
+                public static partial MyUnion Default(int value);
+                public static partial MyUnion Other(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0011");
+    }
+
+    [Test]
+    public async Task VariantNamedTags_ReportsSU0011()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct MyUnion
+            {
+                public static partial MyUnion Tags(string label);
+                public static partial MyUnion Other(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0011");
+    }
+
+    [Test]
+    public async Task TemplateVariantNamedDefault_ReportsSU0011()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public record MyUnionRecord
+            {
+                public record Default(int Value);
+                public record Other(int X);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0011");
+    }
+
+    // ── Boundary tests ──
+
+    [Test]
+    public async Task MaxVariants_255_DoesNotReportSU0006()
+    {
+        var methods = string.Join("\n",
+            Enumerable.Range(0, 255)
+                .Select(i => $"        public static partial MaxUnion V{i}(int x);"));
+
+        var source = $$"""
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct MaxUnion
+            {
+            {{methods}}
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0006");
+    }
+
+    [Test]
+    public async Task ExactlyAtThreshold_64Bytes_DoesNotReportSU0007()
+    {
+        // 8 doubles = 64 bytes = exactly at threshold, should NOT warn
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct AtThreshold
+            {
+                public static partial AtThreshold A(
+                    double f1, double f2, double f3, double f4,
+                    double f5, double f6, double f7, double f8);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0007");
+    }
 }

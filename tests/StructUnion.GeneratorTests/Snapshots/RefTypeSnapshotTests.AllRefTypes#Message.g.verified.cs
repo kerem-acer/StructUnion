@@ -24,7 +24,7 @@
 /// Error    8B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
 public readonly partial struct Message : global::System.IEquatable<Message>
 {
     public enum Tags : byte
@@ -36,15 +36,19 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly string _text_Value;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int[] _data_Items;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly global::System.Exception _error_Ex;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -206,6 +210,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
             Tags.Text => $"Text({_text_Value})",
             Tags.Data => $"Data({_data_Items})",
             Tags.Error => $"Error({_error_Ex})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

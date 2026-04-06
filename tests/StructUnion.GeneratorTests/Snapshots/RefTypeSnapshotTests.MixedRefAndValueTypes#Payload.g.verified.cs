@@ -25,7 +25,7 @@
 /// Both     12B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
 public readonly partial struct Payload : global::System.IEquatable<Payload>
 {
     public enum Tags : byte
@@ -37,18 +37,23 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly string _text_Value;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _number_Value;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly string _both_Name;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _both_Age;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -220,6 +225,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
             Tags.Text => $"Text({_text_Value})",
             Tags.Number => $"Number({_number_Value})",
             Tags.Both => $"Both({_both_Name}, {_both_Age})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

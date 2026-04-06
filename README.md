@@ -9,17 +9,18 @@ A C# source generator that creates zero-allocation discriminated unions (tagged 
 - **Rich generated API** — factory methods, `Is*` checks, property accessors, `TryGet*`, `Match`, equality operators, and `ToString`
 - **Implicit conversions** — single-parameter variants with unique types get implicit conversion operators
 - **Tag enum** — generates a nested `Tags` enum for use with `switch` expressions
-- **Compile-time diagnostics** — 9 analyzer rules (SU0001–SU0009) catch mistakes at build time
+- **Compile-time diagnostics** — 11 analyzer rules (SU0001–SU0011) catch mistakes at build time
 - **Wide compatibility** — targets netstandard2.0, netstandard2.1, net6.0, net8.0, and net10.0
 
 ## Quick Start
 
-Add the NuGet packages:
+Add the NuGet package:
 
 ```xml
 <PackageReference Include="StructUnion" Version="*" />
-<PackageReference Include="StructUnion.Generator" Version="*" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
+
+The source generator is bundled inside the package and activates automatically.
 
 Define a union:
 
@@ -241,7 +242,7 @@ public static class Cases
 By default, the generator strips `"Record"` from record template names. Override at assembly level:
 
 ```csharp
-[assembly: StructUnionSettings(RecordSuffix = "Template")]
+[assembly: StructUnionOptions(TemplateSuffix = "Template")]
 ```
 
 ## Diagnostics
@@ -257,6 +258,8 @@ By default, the generator strips `"Record"` from record template names. Override
 | SU0007 | Warning | Large struct payload (consider a class-based union above 64 bytes) |
 | SU0008 | Error | Duplicate variant names (case-insensitive) |
 | SU0009 | Error | Tag property name conflicts with a variant or common field name |
+| SU0010 | Error | `GeneratedName` and `TemplateSuffix` cannot both be set |
+| SU0011 | Error | Variant name is reserved (conflicts with generated `Tags` enum) |
 
 ## How It Works
 

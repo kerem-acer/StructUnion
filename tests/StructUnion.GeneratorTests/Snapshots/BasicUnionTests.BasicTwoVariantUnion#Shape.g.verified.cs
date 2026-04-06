@@ -23,7 +23,7 @@
 /// Rectangle   16B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 24)]
 public readonly partial struct Shape : global::System.IEquatable<Shape>
 {
     public enum Tags : byte
@@ -34,15 +34,19 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _circle_radius;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _rectangle_length;
 
     [global::System.Runtime.InteropServices.FieldOffset(16)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _rectangle_width;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -179,6 +183,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         {
             Tags.Circle => $"Circle({_circle_radius})",
             Tags.Rectangle => $"Rectangle({_rectangle_length}, {_rectangle_width})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

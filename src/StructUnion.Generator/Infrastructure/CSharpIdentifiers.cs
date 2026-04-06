@@ -30,4 +30,14 @@ static class CSharpIdentifiers
         var camel = char.ToLowerInvariant(name[0]) + name.Substring(1);
         return EscapeKeyword(camel);
     }
+
+    public static string ToPascalCase(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return name;
+        }
+
+        return char.ToUpperInvariant(name[0]) + name.Substring(1);
+    }
 }

@@ -23,7 +23,7 @@
 /// Rect     16B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 24)]
 internal readonly partial struct InternalShape : global::System.IEquatable<InternalShape>
 {
     public enum Tags : byte
@@ -34,15 +34,19 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _circle_radius;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _rect_w;
 
     [global::System.Runtime.InteropServices.FieldOffset(16)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _rect_h;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -179,6 +183,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
         {
             Tags.Circle => $"Circle({_circle_radius})",
             Tags.Rect => $"Rect({_rect_w}, {_rect_h})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

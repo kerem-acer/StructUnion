@@ -24,7 +24,7 @@ namespace MyApp.Models
     /// Error    4B
     /// </code>
     /// </remarks>
-    [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+    [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 8)]
     public readonly partial struct Result : global::System.IEquatable<Result>
     {
         public enum Tags : byte
@@ -35,12 +35,15 @@ namespace MyApp.Models
         }
 
         [global::System.Runtime.InteropServices.FieldOffset(0)]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
         private readonly Tags _tag;
 
         [global::System.Runtime.InteropServices.FieldOffset(4)]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
         private readonly int _ok_value;
 
         [global::System.Runtime.InteropServices.FieldOffset(4)]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
         private readonly int _error_code;
 
         [global::System.Obsolete("Use factory methods instead.", true)]
@@ -164,6 +167,7 @@ namespace MyApp.Models
             {
                 Tags.Ok => $"Ok({_ok_value})",
                 Tags.Error => $"Error({_error_code})",
+                Tags.Default => "Default",
                 _ => "<invalid>"
             };
         }

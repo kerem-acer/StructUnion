@@ -5,6 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CI)' == 'true' Or '$(TF_BUILD)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">

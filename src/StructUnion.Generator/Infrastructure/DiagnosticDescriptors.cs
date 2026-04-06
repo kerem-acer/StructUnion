@@ -86,6 +86,14 @@ static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor ReservedVariantName = new(
+        id: "SU0011",
+        title: "Variant name is reserved",
+        messageFormat: "The variant name '{0}' on '{1}' is reserved and would conflict with the generated Tags enum; rename the variant",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static DiagnosticDescriptor GetById(string id) => id switch
     {
         "SU0001" => StructMustBePartial,
@@ -98,6 +106,7 @@ static class DiagnosticDescriptors
         "SU0008" => DuplicateVariantNameCaseInsensitive,
         "SU0009" => TagPropertyNameConflict,
         "SU0010" => GeneratedNameAndSuffixConflict,
+        "SU0011" => ReservedVariantName,
         _ => throw new ArgumentException($"Unknown diagnostic id: {id}", nameof(id))
     };
 }

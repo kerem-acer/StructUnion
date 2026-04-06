@@ -24,6 +24,7 @@ sealed class StructUnionAttribute : Attribute
     /// with unique parameter types.
     /// </summary>
     /// <remarks>
+    /// The effective default is <c>true</c> (not <c>false</c> as the C# property type suggests).
     /// Only participates in the options cascade when explicitly set in the attribute declaration.
     /// If omitted, falls back to assembly-level <see cref="StructUnionOptionsAttribute"/> or the default (true).
     /// </remarks>
@@ -40,6 +41,7 @@ sealed class StructUnionAttribute : Attribute
     /// and <c>As{Variant}</c> accessor properties instead of flat <c>{Variant}{Param}</c> properties.
     /// </summary>
     /// <remarks>
+    /// The effective default is <c>false</c>.
     /// Only participates in the options cascade when explicitly set in the attribute declaration.
     /// If omitted, falls back to assembly-level <see cref="StructUnionOptionsAttribute"/> or the default (false).
     /// </remarks>

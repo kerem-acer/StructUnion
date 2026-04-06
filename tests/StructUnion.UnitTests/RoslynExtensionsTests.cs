@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Imposter.Abstractions;
 using Microsoft.CodeAnalysis;
 using StructUnion.Generator.Infrastructure;
@@ -81,6 +80,7 @@ public class RoslynExtensionsTests
         parent.IsValueType.Getter().Returns(false);
         parent.IsRecord.Getter().Returns(false);
         parent.Name.Getter().Returns("Outer");
+        parent.TypeParameters.Getter().Returns([]);
         parent.ContainingType.Getter().Returns((INamedTypeSymbol)null!);
 
         var child = INamedTypeSymbol.Imposter();
@@ -97,6 +97,7 @@ public class RoslynExtensionsTests
         var parent = INamedTypeSymbol.Imposter();
         parent.IsValueType.Getter().Returns(true);
         parent.Name.Getter().Returns("Container");
+        parent.TypeParameters.Getter().Returns([]);
         parent.ContainingType.Getter().Returns((INamedTypeSymbol)null!);
 
         var child = INamedTypeSymbol.Imposter();
@@ -113,6 +114,7 @@ public class RoslynExtensionsTests
         parent.IsValueType.Getter().Returns(false);
         parent.IsRecord.Getter().Returns(true);
         parent.Name.Getter().Returns("Base");
+        parent.TypeParameters.Getter().Returns([]);
         parent.ContainingType.Getter().Returns((INamedTypeSymbol)null!);
 
         var child = INamedTypeSymbol.Imposter();
@@ -120,6 +122,26 @@ public class RoslynExtensionsTests
 
         var result = child.Instance().GetContainingTypeChain();
         await Assert.That(result[0]).IsEqualTo("partial record class Base");
+    }
+
+    [Test]
+    public async Task GetContainingTypeChain_GenericClass_IncludesTypeParameters()
+    {
+        var tp = ITypeParameterSymbol.Imposter();
+        tp.Name.Getter().Returns("T");
+
+        var parent = INamedTypeSymbol.Imposter();
+        parent.IsValueType.Getter().Returns(false);
+        parent.IsRecord.Getter().Returns(false);
+        parent.Name.Getter().Returns("Outer");
+        parent.TypeParameters.Getter().Returns([tp.Instance()]);
+        parent.ContainingType.Getter().Returns((INamedTypeSymbol)null!);
+
+        var child = INamedTypeSymbol.Imposter();
+        child.ContainingType.Getter().Returns(parent.Instance());
+
+        var result = child.Instance().GetContainingTypeChain();
+        await Assert.That(result[0]).IsEqualTo("partial class Outer<T>");
     }
 
     // ── GetTypeParameterModels ──

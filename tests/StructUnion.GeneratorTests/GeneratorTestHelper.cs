@@ -42,32 +42,4 @@ public static class GeneratorTestHelper
             .RunGenerators(compilation);
     }
 
-    public static (GeneratorDriver Driver, Compilation Compilation) CreateDriverWithCompilation(string source)
-    {
-        var syntaxTree = CSharpSyntaxTree.ParseText(source);
-
-        var references = new List<MetadataReference>();
-        var trustedAssemblies = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? "")
-            .Split(Path.PathSeparator)
-            .Where(p => !string.IsNullOrEmpty(p));
-
-        foreach (var asm in trustedAssemblies)
-        {
-            references.Add(MetadataReference.CreateFromFile(asm));
-        }
-
-        var compilation = CSharpCompilation.Create(
-            assemblyName: "TestAssembly",
-            syntaxTrees: [syntaxTree],
-            references: references,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-        var generator = new StructUnionGenerator();
-
-        var driver = CSharpGeneratorDriver
-            .Create(generator)
-            .RunGenerators(compilation);
-
-        return (driver, compilation);
-    }
 }

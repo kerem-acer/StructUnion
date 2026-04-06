@@ -36,7 +36,7 @@ static class UnionEmitter
         // Struct layout attribute
         if (model.Layout == LayoutStrategy.Explicit)
         {
-            sb.AppendLine("[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]");
+            sb.AppendLine($"[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = {model.TotalSize})]");
         }
 
         // Struct declaration
@@ -134,6 +134,10 @@ static class UnionEmitter
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Emits a partial declaration of the template type solely to attach the layout XML doc,
+    /// so IDE hover on the user's template type shows the memory layout.
+    /// </summary>
     public static string EmitTemplateDoc(UnionModel model)
     {
         var sb = new SourceBuilder();

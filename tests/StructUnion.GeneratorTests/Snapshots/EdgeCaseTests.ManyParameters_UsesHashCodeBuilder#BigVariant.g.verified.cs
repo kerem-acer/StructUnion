@@ -29,7 +29,7 @@
 /// Small    4B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 36)]
 public readonly partial struct BigVariant : global::System.IEquatable<BigVariant>
 {
     public enum Tags : byte
@@ -40,33 +40,43 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_a;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_b;
 
     [global::System.Runtime.InteropServices.FieldOffset(12)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_c;
 
     [global::System.Runtime.InteropServices.FieldOffset(16)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_d;
 
     [global::System.Runtime.InteropServices.FieldOffset(20)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_e;
 
     [global::System.Runtime.InteropServices.FieldOffset(24)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_f;
 
     [global::System.Runtime.InteropServices.FieldOffset(28)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_g;
 
     [global::System.Runtime.InteropServices.FieldOffset(32)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _many_h;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _small_x;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -282,6 +292,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         {
             Tags.Many => $"Many({_many_a}, {_many_b}, {_many_c}, {_many_d}, {_many_e}, {_many_f}, {_many_g}, {_many_h})",
             Tags.Small => $"Small({_small_x})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

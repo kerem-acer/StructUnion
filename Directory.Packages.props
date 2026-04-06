@@ -9,5 +9,6 @@
     <PackageVersion Include="Verify.SourceGenerators" Version="2.5.0" />
     <PackageVersion Include="Verify.TUnit" Version="31.15.0" />
     <PackageVersion Include="Imposter" Version="0.1.9" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
   </ItemGroup>
 </Project>

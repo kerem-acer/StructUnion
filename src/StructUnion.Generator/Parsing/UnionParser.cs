@@ -10,6 +10,7 @@ namespace StructUnion.Generator.Parsing;
 static class UnionParser
 {
     const int MaxVariants = 255;
+    const byte FirstVariantTag = 1;
     const int LargeStructThreshold = 64;
 
     /// <summary>
@@ -71,7 +72,7 @@ static class UnionParser
 
         // Variants: static partial methods returning Self
         var variants = ImmutableArray.CreateBuilder<VariantModel>();
-        byte tag = 1;
+        byte tag = FirstVariantTag;
         foreach (var member in symbol.GetMembers())
         {
             ct.ThrowIfCancellationRequested();
@@ -113,6 +114,11 @@ static class UnionParser
         }
 
         if (HasCaseInsensitiveDuplicate(variants, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        if (HasReservedVariantName(variants, symbol.Name, location, diagnostics))
         {
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
@@ -162,7 +168,7 @@ static class UnionParser
 
         // Variants: nested types (records or classes)
         var variants = ImmutableArray.CreateBuilder<VariantModel>();
-        byte tag = 1;
+        byte tag = FirstVariantTag;
         foreach (var nested in symbol.GetTypeMembers())
         {
             ct.ThrowIfCancellationRequested();
@@ -186,6 +192,11 @@ static class UnionParser
         }
 
         if (HasCaseInsensitiveDuplicate(variants, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        if (HasReservedVariantName(variants, symbol.Name, location, diagnostics))
         {
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
@@ -256,6 +267,32 @@ static class UnionParser
             }
 
             seen[variant.Name] = variant.Name;
+        }
+
+        return false;
+    }
+
+    static readonly HashSet<string> ReservedVariantNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Default",
+        "Tags"
+    };
+
+    static bool HasReservedVariantName(
+        ImmutableArray<VariantModel>.Builder variants,
+        string typeName,
+        Location location,
+        ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        foreach (var variant in variants)
+        {
+            if (ReservedVariantNames.Contains(variant.Name))
+            {
+                diagnostics.Add(DiagnosticInfo.Create(
+                    DiagnosticDescriptors.ReservedVariantName, location,
+                    variant.Name, typeName));
+                return true;
+            }
         }
 
         return false;

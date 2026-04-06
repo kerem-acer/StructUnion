@@ -33,6 +33,7 @@ static class FieldEmitter
     static void EmitExplicitFields(SourceBuilder sb, UnionModel model)
     {
         sb.AppendLine("[global::System.Runtime.InteropServices.FieldOffset(0)]");
+        sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
         sb.AppendLine("private readonly Tags _tag;");
 
         // Common fields
@@ -56,6 +57,7 @@ static class FieldEmitter
                     variant, i, model.RefZoneOffset, model.ValueZoneOffset);
                 sb.AppendLine();
                 sb.AppendLine($"[global::System.Runtime.InteropServices.FieldOffset({offset})]");
+                sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
                 sb.AppendLine($"private readonly {param.TypeFullyQualified} _{variant.Name.ToLowerInvariant()}_{param.Name};");
             }
         }
@@ -63,6 +65,7 @@ static class FieldEmitter
 
     static void EmitAutoFields(SourceBuilder sb, UnionModel model)
     {
+        sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
         sb.AppendLine("private readonly Tags _tag;");
 
         foreach (var field in model.CommonFields)
@@ -74,6 +77,7 @@ static class FieldEmitter
         {
             foreach (var param in variant.Parameters)
             {
+                sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
                 sb.AppendLine($"private readonly {param.TypeFullyQualified} _{variant.Name.ToLowerInvariant()}_{param.Name};");
             }
         }

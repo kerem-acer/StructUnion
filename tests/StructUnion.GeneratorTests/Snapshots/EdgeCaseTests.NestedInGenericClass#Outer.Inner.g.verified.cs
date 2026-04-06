@@ -5,26 +5,8 @@
 #pragma warning disable CS0649 // field never assigned (Unsafe.AsRef)
 #pragma warning disable CS8618 // non-nullable field in [Obsolete] constructor
 
-partial class Outer
+partial class Outer<T>
 {
-    /// <summary>
-    /// Struct union with 2 variants.
-    /// </summary>
-    /// <remarks>
-    /// <para><b>8 bytes</b> · align 4 · 3B padding</para>
-    /// <code>
-    /// @0..1  _tag         byte         1B
-    /// @1..4  ---          padding      3B
-    /// @4..8  x            int          4B  (A)
-    /// @4..8  y            int          4B  (B)
-    /// </code>
-    /// <para><b>Variants</b></para>
-    /// <code>
-    /// A    4B
-    /// B    4B
-    /// </code>
-    /// </remarks>
-    [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 8)]
     public readonly partial struct Inner : global::System.IEquatable<Inner>
     {
         public enum Tags : byte
@@ -34,34 +16,29 @@ partial class Outer
             B = 2,
         }
 
-        [global::System.Runtime.InteropServices.FieldOffset(0)]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
         private readonly Tags _tag;
-
-        [global::System.Runtime.InteropServices.FieldOffset(4)]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        private readonly int _a_x;
-
-        [global::System.Runtime.InteropServices.FieldOffset(4)]
+        private readonly T _a_value;
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        private readonly int _b_y;
+        private readonly int _b_count;
 
         [global::System.Obsolete("Use factory methods instead.", true)]
         public Inner() { }
 
-        public static partial Inner A(int x)
+        public static partial Inner A(T value)
         {
             var result = default(Inner);
             global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.A;
-            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._a_x) = x;
+            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._a_value) = value;
             return result;
         }
 
-        public static partial Inner B(int y)
+        public static partial Inner B(int count)
         {
             var result = default(Inner);
             global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.B;
-            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._b_y) = y;
+            global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._b_count) = count;
             return result;
         }
 
@@ -74,74 +51,77 @@ partial class Outer
         public bool IsA => _tag == Tags.A;
         public bool IsB => _tag == Tags.B;
 
-        public int AX
+        public T AValue
         {
             get
             {
                 if (_tag != Tags.A) ThrowInvalidCase(nameof(A));
-                return _a_x;
+                return _a_value;
             }
         }
-        public int BY
+        public int BCount
         {
             get
             {
                 if (_tag != Tags.B) ThrowInvalidCase(nameof(B));
-                return _b_y;
+                return _b_count;
             }
         }
 
-        public bool TryGetA(out int x)
+        public bool TryGetA(out T value)
         {
             if (_tag == Tags.A)
             {
-                x = _a_x;
+                value = _a_value;
                 return true;
             }
 
-            x = default!;
+            value = default!;
             return false;
         }
 
-        public bool TryGetB(out int y)
+        public bool TryGetB(out int count)
         {
             if (_tag == Tags.B)
             {
-                y = _b_y;
+                count = _b_count;
                 return true;
             }
 
-            y = default!;
+            count = default!;
             return false;
         }
 
-        public TResult Match<TResult>(global::System.Func<int, TResult> a, global::System.Func<int, TResult> b)
+        public TResult Match<TResult>(global::System.Func<T, TResult> a, global::System.Func<int, TResult> b)
         {
             return _tag switch
             {
-                Tags.A => a(_a_x),
-                Tags.B => b(_b_y),
+                Tags.A => a(_a_value),
+                Tags.B => b(_b_count),
                 _ => ThrowUnknownTag<TResult>()
             };
         }
 
-        public void Match(global::System.Action<int> a, global::System.Action<int> b)
+        public void Match(global::System.Action<T> a, global::System.Action<int> b)
         {
             switch (_tag)
             {
-                case Tags.A: a(_a_x); break;
-                case Tags.B: b(_b_y); break;
+                case Tags.A: a(_a_value); break;
+                case Tags.B: b(_b_count); break;
                 default: ThrowUnknownTag(); break;
             }
         }
+
+        public static implicit operator Inner(T value) => A(value);
+        public static implicit operator Inner(int value) => B(value);
 
         public bool Equals(Inner other)
         {
             if (_tag != other._tag) return false;
             return _tag switch
             {
-                Tags.A => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_a_x, other._a_x),
-                Tags.B => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_b_y, other._b_y),
+                Tags.A => global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(_a_value, other._a_value),
+                Tags.B => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_b_count, other._b_count),
                 _ => true
             };
         }
@@ -152,8 +132,8 @@ partial class Outer
         {
             return _tag switch
             {
-                Tags.A => global::System.HashCode.Combine(_tag, _a_x),
-                Tags.B => global::System.HashCode.Combine(_tag, _b_y),
+                Tags.A => global::System.HashCode.Combine(_tag, _a_value),
+                Tags.B => global::System.HashCode.Combine(_tag, _b_count),
                 _ => _tag.GetHashCode()
             };
         }
@@ -165,8 +145,8 @@ partial class Outer
         {
             return _tag switch
             {
-                Tags.A => $"A({_a_x})",
-                Tags.B => $"B({_b_y})",
+                Tags.A => $"A({_a_value})",
+                Tags.B => $"B({_b_count})",
                 Tags.Default => "Default",
                 _ => "<invalid>"
             };

@@ -235,7 +235,7 @@ static class LayoutCalculator
             var refCount = 0;
             foreach (var param in variant.Parameters)
             {
-                if (!param.IsUnmanaged)
+                if (IsRefField(param))
                 {
                     refCount++;
                     hasRefFields = true;
@@ -263,7 +263,7 @@ static class LayoutCalculator
             for (var i = 0; i < variant.Parameters.Count; i++)
             {
                 var param = variant.Parameters[i];
-                if (!param.IsUnmanaged)
+                if (IsRefField(param))
                 {
                     continue;
                 }

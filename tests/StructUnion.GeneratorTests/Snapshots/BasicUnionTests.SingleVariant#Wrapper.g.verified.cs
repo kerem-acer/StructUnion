@@ -20,7 +20,7 @@
 /// Value    4B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 8)]
 public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
 {
     public enum Tags : byte
@@ -30,9 +30,11 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _value_x;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -124,6 +126,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
         return _tag switch
         {
             Tags.Value => $"Value({_value_x})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

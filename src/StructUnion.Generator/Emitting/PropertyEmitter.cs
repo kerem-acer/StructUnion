@@ -55,7 +55,7 @@ static class PropertyEmitter
         {
             foreach (var param in variant.Parameters)
             {
-                var propName = $"{variant.Name}{char.ToUpperInvariant(param.Name[0])}{param.Name.Substring(1)}";
+                var propName = $"{variant.Name}{CSharpIdentifiers.ToPascalCase(param.Name)}";
                 var field = model.VariantField(variant.Name, param.Name);
 
                 sb.AppendLine($"public {param.TypeFullyQualified} {propName}");

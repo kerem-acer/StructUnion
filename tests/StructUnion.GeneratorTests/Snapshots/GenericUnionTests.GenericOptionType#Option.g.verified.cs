@@ -14,7 +14,9 @@ public readonly partial struct Option<T> : global::System.IEquatable<Option<T>>
         None = 2,
     }
 
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly T _some_value;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -121,6 +123,7 @@ public readonly partial struct Option<T> : global::System.IEquatable<Option<T>>
         {
             Tags.Some => $"Some({_some_value})",
             Tags.None => "None",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

@@ -29,6 +29,7 @@ static class ToStringEmitter
                 });
                 sb.AppendLine($"Tags.{variant.Name} => $\"{variant.Name}({string.Join(", ", parts)})\",");
             }
+            sb.AppendLine("Tags.Default => \"Default\",");
             sb.AppendLine("_ => \"<invalid>\"");
             sb.CloseBraceNoNewline();
             sb.AppendLine(";");

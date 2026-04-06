@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Imposter.Abstractions;
 using Microsoft.CodeAnalysis;
 using StructUnion.Generator.Parsing;

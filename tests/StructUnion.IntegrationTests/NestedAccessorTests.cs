@@ -71,7 +71,7 @@ public class NestedAccessorTests
         var result = cmd.TryGetMoveTo(out var data);
 
         await Assert.That(result).IsFalse();
-        await Assert.That(data).IsEqualTo(default(DrawCmd.Cases.MoveTo));
+        await Assert.That(data).IsEqualTo(default);
     }
 
     [Test]

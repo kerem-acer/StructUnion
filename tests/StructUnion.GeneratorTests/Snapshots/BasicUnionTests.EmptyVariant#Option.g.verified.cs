@@ -21,7 +21,7 @@
 /// None    0B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 8)]
 public readonly partial struct Option : global::System.IEquatable<Option>
 {
     public enum Tags : byte
@@ -32,9 +32,11 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(4)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _some_value;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -141,6 +143,7 @@ public readonly partial struct Option : global::System.IEquatable<Option>
         {
             Tags.Some => $"Some({_some_value})",
             Tags.None => "None",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

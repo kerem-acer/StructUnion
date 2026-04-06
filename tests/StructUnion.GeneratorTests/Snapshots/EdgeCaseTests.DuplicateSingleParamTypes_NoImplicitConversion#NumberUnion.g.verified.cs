@@ -22,7 +22,7 @@
 /// Fahrenheit    8B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
 public readonly partial struct NumberUnion : global::System.IEquatable<NumberUnion>
 {
     public enum Tags : byte
@@ -33,12 +33,15 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _celsius_value;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _fahrenheit_value;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -162,6 +165,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
         {
             Tags.Celsius => $"Celsius({_celsius_value})",
             Tags.Fahrenheit => $"Fahrenheit({_fahrenheit_value})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

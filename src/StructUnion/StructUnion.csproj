@@ -8,6 +8,9 @@
     <PackageTags>discriminated-union;tagged-union;source-generator;struct;roslyn;codegen</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>kerem-acer</Authors>
+    <RepositoryUrl>https://github.com/kerem-acer/StructUnion</RepositoryUrl>
+    <ProjectUrl>https://github.com/kerem-acer/StructUnion</ProjectUrl>
 
     <!-- Ensure the generator DLL is not a runtime dependency -->
     <IncludeBuildOutput>true</IncludeBuildOutput>
@@ -33,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="Polyfill" PrivateAssets="all" />
   </ItemGroup>
 </Project>

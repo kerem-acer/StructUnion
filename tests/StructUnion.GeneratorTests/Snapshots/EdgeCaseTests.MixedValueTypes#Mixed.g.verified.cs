@@ -26,7 +26,7 @@
 /// FloatCase    4B
 /// </code>
 /// </remarks>
-[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit)]
+[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
 public readonly partial struct Mixed : global::System.IEquatable<Mixed>
 {
     public enum Tags : byte
@@ -39,18 +39,23 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly Tags _tag;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly int _intcase_value;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly long _longcase_value;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly byte _bytecase_value;
 
     [global::System.Runtime.InteropServices.FieldOffset(8)]
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly float _floatcase_value;
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -247,6 +252,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
             Tags.LongCase => $"LongCase({_longcase_value})",
             Tags.ByteCase => $"ByteCase({_bytecase_value})",
             Tags.FloatCase => $"FloatCase({_floatcase_value})",
+            Tags.Default => "Default",
             _ => "<invalid>"
         };
     }

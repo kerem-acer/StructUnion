@@ -32,7 +32,7 @@ static class CasesEmitter
         {
             foreach (var param in variant.Parameters)
             {
-                var propName = $"{char.ToUpperInvariant(param.Name[0])}{param.Name.Substring(1)}";
+                var propName = CSharpIdentifiers.ToPascalCase(param.Name);
                 sb.AppendLine($"public {param.TypeFullyQualified} {propName} {{ get; }}");
             }
 
@@ -46,7 +46,7 @@ static class CasesEmitter
             {
                 foreach (var param in variant.Parameters)
                 {
-                    var propName = $"{char.ToUpperInvariant(param.Name[0])}{param.Name.Substring(1)}";
+                    var propName = CSharpIdentifiers.ToPascalCase(param.Name);
                     sb.AppendLine($"{propName} = {CSharpIdentifiers.ToCamelCase(param.Name)};");
                 }
             }

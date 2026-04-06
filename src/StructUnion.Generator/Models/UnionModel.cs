@@ -46,6 +46,8 @@ readonly record struct UnionModel(
             foreach (var ct in ContainingTypes)
             {
                 var name = ct.Substring(ct.LastIndexOf(' ') + 1);
+                var genericIdx = name.IndexOf('<');
+                if (genericIdx >= 0) name = name.Substring(0, genericIdx);
                 prefix += $"{name}.";
             }
 

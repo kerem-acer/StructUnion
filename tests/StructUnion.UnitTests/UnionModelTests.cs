@@ -81,6 +81,13 @@ public class UnionModelTests
     }
 
     [Test]
+    public async Task FullHintName_WithGenericContainingType()
+    {
+        var model = MakeModel(ns: "MyApp", containingTypes: ["partial class Outer<T>"]);
+        await Assert.That(model.FullHintName).IsEqualTo("MyApp.Outer.Shape");
+    }
+
+    [Test]
     public async Task TypeNameWithParameters_NoParams()
     {
         var model = MakeModel();

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace StructUnion.Generator.Infrastructure;
@@ -42,6 +43,7 @@ sealed class SourceBuilder
 
     public SourceBuilder CloseBrace(bool semicolon = false)
     {
+        Debug.Assert(_indent > 0, "CloseBrace called with zero indent");
         _indent--;
         AppendLine(semicolon ? "};" : "}");
         return this;
@@ -49,6 +51,7 @@ sealed class SourceBuilder
 
     public SourceBuilder CloseBraceNoNewline()
     {
+        Debug.Assert(_indent > 0, "CloseBraceNoNewline called with zero indent");
         _indent--;
         WriteIndent();
         _sb.Append('}');
@@ -90,6 +93,10 @@ sealed class SourceBuilder
 
     sealed class IndentScope(SourceBuilder builder) : IDisposable
     {
-        public void Dispose() => builder._indent--;
+        public void Dispose()
+        {
+            Debug.Assert(builder._indent > 0, "IndentScope.Dispose called with zero indent");
+            builder._indent--;
+        }
     }
 }
