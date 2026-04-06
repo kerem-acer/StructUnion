@@ -166,6 +166,17 @@ public readonly partial struct Message : global::System.IEquatable<Message>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, string, TResult> text, global::System.Func<TState, int[], TResult> data, global::System.Func<TState, global::System.Exception, TResult> error)
+    {
+        return _tag switch
+        {
+            Tags.Text => text(state, _text_Value),
+            Tags.Data => data(state, _data_Items),
+            Tags.Error => error(state, _error_Ex),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<string> text, global::System.Action<int[]> data, global::System.Action<global::System.Exception> error)
     {
         switch (_tag)
@@ -173,6 +184,17 @@ public readonly partial struct Message : global::System.IEquatable<Message>
             case Tags.Text: text(_text_Value); break;
             case Tags.Data: data(_data_Items); break;
             case Tags.Error: error(_error_Ex); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, string> text, global::System.Action<TState, int[]> data, global::System.Action<TState, global::System.Exception> error)
+    {
+        switch (_tag)
+        {
+            case Tags.Text: text(state, _text_Value); break;
+            case Tags.Data: data(state, _data_Items); break;
+            case Tags.Error: error(state, _error_Ex); break;
             default: ThrowUnknownTag(); break;
         }
     }

@@ -246,12 +246,32 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, int, int, int, int, int, int, int, int, TResult> many, global::System.Func<TState, int, TResult> small)
+    {
+        return _tag switch
+        {
+            Tags.Many => many(state, _many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h),
+            Tags.Small => small(state, _small_x),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<int, int, int, int, int, int, int, int> many, global::System.Action<int> small)
     {
         switch (_tag)
         {
             case Tags.Many: many(_many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h); break;
             case Tags.Small: small(_small_x); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, int, int, int, int, int, int, int, int> many, global::System.Action<TState, int> small)
+    {
+        switch (_tag)
+        {
+            case Tags.Many: many(state, _many_a, _many_b, _many_c, _many_d, _many_e, _many_f, _many_g, _many_h); break;
+            case Tags.Small: small(state, _small_x); break;
             default: ThrowUnknownTag(); break;
         }
     }

@@ -24,7 +24,7 @@ static class ToStringEmitter
 
                 var parts = variant.Parameters.Select(p =>
                 {
-                    var field = model.VariantField(variant.Name, p.Name);
+                    var field = variant.FieldName(p.Name);
                     return $"{{{field}}}";
                 });
                 sb.AppendLine($"Tags.{variant.Name} => $\"{variant.Name}({string.Join(", ", parts)})\",");

@@ -735,6 +735,71 @@ public class DiagnosticTests
         await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0011");
     }
 
+    // ── SU0012: Invalid identifier ──
+
+    [Test]
+    public async Task InvalidGeneratedName_ReportsSU0012()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion("123 invalid!")]
+            public record ShapeRecord
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0012");
+    }
+
+    [Test]
+    public async Task InvalidTagPropertyName_ReportsSU0012()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion(TagPropertyName = "123")]
+            public readonly partial struct Shape
+            {
+                public static partial Shape Circle(double radius);
+                public static partial Shape Rectangle(double w, double h);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0012");
+    }
+
+    [Test]
+    public async Task ValidGeneratedName_DoesNotReportSU0012()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion("Shape")]
+            public record ShapeRecord
+            {
+                public record Circle(double Radius);
+                public record Rectangle(double Width, double Height);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0012");
+    }
+
     // ── Boundary tests ──
 
     [Test]

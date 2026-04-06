@@ -82,12 +82,32 @@ public readonly partial struct Option<T> : global::System.IEquatable<Option<T>>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, T, TResult> some, global::System.Func<TState, TResult> none)
+    {
+        return _tag switch
+        {
+            Tags.Some => some(state, _some_value),
+            Tags.None => none(state),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<T> some, global::System.Action none)
     {
         switch (_tag)
         {
             case Tags.Some: some(_some_value); break;
             case Tags.None: none(); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, T> some, global::System.Action<TState> none)
+    {
+        switch (_tag)
+        {
+            case Tags.Some: some(state, _some_value); break;
+            case Tags.None: none(state); break;
             default: ThrowUnknownTag(); break;
         }
     }

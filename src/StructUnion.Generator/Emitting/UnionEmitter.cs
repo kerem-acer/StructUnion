@@ -187,24 +187,40 @@ static class UnionEmitter
             return;
         }
 
-        // Only generate for single-parameter variants with unique types
-        var singleParamVariants = model.Variants
-            .Where(v => v.Parameters.Count == 1)
-            .ToList();
-
-        var typeCounts = singleParamVariants
-            .GroupBy(v => v.Parameters[0].TypeFullyQualified)
-            .Where(g => g.Count() == 1)
-            .Select(g => g.First())
-            .ToList();
-
-        foreach (var variant in typeCounts)
+        // Find single-parameter variants with unique types (no LINQ, single pass)
+        var typeToVariant = new Dictionary<string, VariantModel?>();
+        for (var i = 0; i < model.Variants.Count; i++)
         {
-            var param = variant.Parameters[0];
-            sb.AppendLine($"public static implicit operator {model.TypeNameWithParameters}({param.TypeFullyQualified} value) => {variant.Name}(value);");
+            var variant = model.Variants[i];
+            if (variant.Parameters.Count != 1)
+            {
+                continue;
+            }
+
+            var typeName = variant.Parameters[0].TypeFullyQualified;
+            if (typeToVariant.ContainsKey(typeName))
+            {
+                typeToVariant[typeName] = null; // duplicate type — mark as ineligible
+            }
+            else
+            {
+                typeToVariant[typeName] = variant;
+            }
         }
 
-        if (typeCounts.Count > 0)
+        var emitted = false;
+        foreach (var kvp in typeToVariant)
+        {
+            if (kvp.Value is not { } variant)
+            {
+                continue;
+            }
+
+            sb.AppendLine($"public static implicit operator {model.TypeNameWithParameters}({kvp.Key} value) => {variant.Name}(value);");
+            emitted = true;
+        }
+
+        if (emitted)
         {
             sb.AppendLine();
         }

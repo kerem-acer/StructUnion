@@ -150,6 +150,16 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, TResult> circle, global::System.Func<TState, double, double, TResult> rectangle)
+    {
+        return _tag switch
+        {
+            Tags.Circle => circle(state, _circle_Radius),
+            Tags.Rectangle => rectangle(state, _rectangle_Length, _rectangle_Width),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double> circle, global::System.Action<double, double> rectangle)
     {
         switch (_tag)
@@ -160,14 +170,24 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         }
     }
 
+    public void Match<TState>(TState state, global::System.Action<TState, double> circle, global::System.Action<TState, double, double> rectangle)
+    {
+        switch (_tag)
+        {
+            case Tags.Circle: circle(state, _circle_Radius); break;
+            case Tags.Rectangle: rectangle(state, _rectangle_Length, _rectangle_Width); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
     public bool Equals(Shape other)
     {
         if (_tag != other._tag) return false;
         if (!(Id == other.Id)) return false;
         return _tag switch
         {
-            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),
-            Tags.Rectangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_Length, other._rectangle_Length) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_Width, other._rectangle_Width),
+            Tags.Circle => _circle_Radius.Equals(other._circle_Radius),
+            Tags.Rectangle => _rectangle_Length.Equals(other._rectangle_Length) && _rectangle_Width.Equals(other._rectangle_Width),
             _ => true
         };
     }

@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using StructUnion.Generator.Models;
 
+#pragma warning disable RS1024 // Symbols should be compared for equality
+
 namespace StructUnion.Generator.Infrastructure;
 
 static class RoslynExtensions
@@ -123,9 +125,10 @@ static class RoslynExtensions
     /// <summary>
     /// Reads assembly-level options from [assembly: StructUnionOptions].
     /// Returns null for properties not explicitly set by the user.
+    /// Extracted into its own IncrementalValueProvider for proper caching —
+    /// reading from Compilation in the per-type transform breaks incremental invalidation.
     /// </summary>
-    public static (string? TagPropertyName, string? TemplateSuffix, bool? EnableImplicit, bool? NestedAccessors)
-        GetAssemblyOptions(this Compilation compilation)
+    public static AssemblyOptions GetAssemblyOptions(this Compilation compilation)
     {
         string? tagPropertyName = null;
         string? templateSuffix = null;
@@ -157,6 +160,6 @@ static class RoslynExtensions
             }
         }
 
-        return (tagPropertyName, templateSuffix, enableImplicit, nestedAccessors);
+        return new AssemblyOptions(tagPropertyName, templateSuffix, enableImplicit, nestedAccessors);
     }
 }

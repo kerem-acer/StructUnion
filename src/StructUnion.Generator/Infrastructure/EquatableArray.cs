@@ -68,7 +68,14 @@ readonly struct EquatableArray<T>(ImmutableArray<T> array)
         }
     }
 
-    public IEnumerator<T> GetEnumerator()
+    /// <summary>
+    /// Returns a struct enumerator that avoids boxing.
+    /// C# foreach resolves this via duck typing over the interface version.
+    /// </summary>
+    public ImmutableArray<T>.Enumerator GetEnumerator() =>
+        _array.IsDefault ? ImmutableArray<T>.Empty.GetEnumerator() : _array.GetEnumerator();
+
+    IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
         if (_array.IsDefault)
         {
@@ -78,7 +85,7 @@ readonly struct EquatableArray<T>(ImmutableArray<T> array)
         return ((IEnumerable<T>)_array).GetEnumerator();
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
     public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) => left.Equals(right);
     public static bool operator !=(EquatableArray<T> left, EquatableArray<T> right) => !left.Equals(right);

@@ -105,6 +105,15 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, double, TResult> triangle)
+    {
+        return _tag switch
+        {
+            Tags.Triangle => triangle(state, _triangle_base, _triangle_height),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double, double> triangle)
     {
         switch (_tag)
@@ -114,12 +123,21 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         }
     }
 
+    public void Match<TState>(TState state, global::System.Action<TState, double, double> triangle)
+    {
+        switch (_tag)
+        {
+            case Tags.Triangle: triangle(state, _triangle_base, _triangle_height); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
     public bool Equals(Shape other)
     {
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Triangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_triangle_base, other._triangle_base) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_triangle_height, other._triangle_height),
+            Tags.Triangle => _triangle_base.Equals(other._triangle_base) && _triangle_height.Equals(other._triangle_height),
             _ => true
         };
     }

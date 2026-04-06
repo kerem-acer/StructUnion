@@ -129,12 +129,32 @@ namespace MyApp.Models
             };
         }
 
+        public TResult Match<TState, TResult>(TState state, global::System.Func<TState, int, TResult> ok, global::System.Func<TState, int, TResult> error)
+        {
+            return _tag switch
+            {
+                Tags.Ok => ok(state, _ok_value),
+                Tags.Error => error(state, _error_code),
+                _ => ThrowUnknownTag<TResult>()
+            };
+        }
+
         public void Match(global::System.Action<int> ok, global::System.Action<int> error)
         {
             switch (_tag)
             {
                 case Tags.Ok: ok(_ok_value); break;
                 case Tags.Error: error(_error_code); break;
+                default: ThrowUnknownTag(); break;
+            }
+        }
+
+        public void Match<TState>(TState state, global::System.Action<TState, int> ok, global::System.Action<TState, int> error)
+        {
+            switch (_tag)
+            {
+                case Tags.Ok: ok(state, _ok_value); break;
+                case Tags.Error: error(state, _error_code); break;
                 default: ThrowUnknownTag(); break;
             }
         }

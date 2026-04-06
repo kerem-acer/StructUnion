@@ -58,7 +58,7 @@ static class FieldEmitter
                 sb.AppendLine();
                 sb.AppendLine($"[global::System.Runtime.InteropServices.FieldOffset({offset})]");
                 sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
-                sb.AppendLine($"private readonly {param.TypeFullyQualified} _{variant.Name.ToLowerInvariant()}_{param.Name};");
+                sb.AppendLine($"private readonly {param.TypeFullyQualified} {variant.FieldName(param.Name)};");
             }
         }
     }
@@ -78,7 +78,7 @@ static class FieldEmitter
             foreach (var param in variant.Parameters)
             {
                 sb.AppendLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
-                sb.AppendLine($"private readonly {param.TypeFullyQualified} _{variant.Name.ToLowerInvariant()}_{param.Name};");
+                sb.AppendLine($"private readonly {param.TypeFullyQualified} {variant.FieldName(param.Name)};");
             }
         }
     }

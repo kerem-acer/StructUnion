@@ -144,12 +144,32 @@ public readonly partial struct Event : global::System.IEquatable<Event>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, string, TResult> tag, global::System.Func<TState, int, int, TResult> click)
+    {
+        return _tag switch
+        {
+            Tags.Tag => tag(state, _tag_value),
+            Tags.Click => click(state, _click_x, _click_y),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<string> tag, global::System.Action<int, int> click)
     {
         switch (_tag)
         {
             case Tags.Tag: tag(_tag_value); break;
             case Tags.Click: click(_click_x, _click_y); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, string> tag, global::System.Action<TState, int, int> click)
+    {
+        switch (_tag)
+        {
+            case Tags.Tag: tag(state, _tag_value); break;
+            case Tags.Click: click(state, _click_x, _click_y); break;
             default: ThrowUnknownTag(); break;
         }
     }

@@ -32,6 +32,11 @@ readonly record struct DiagnosticInfo(
             messageArgs.ToImmutableArray().ToEquatableArray());
     }
 
+    public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, DiagnosticLocation location, params string[] messageArgs) =>
+        new(descriptor.Id, location.FilePath, location.SpanStart, location.SpanLength,
+            location.StartLine, location.StartCharacter, location.EndLine, location.EndCharacter,
+            messageArgs.ToImmutableArray().ToEquatableArray());
+
     public Diagnostic ToDiagnostic()
     {
         var descriptor = DiagnosticDescriptors.GetById(Id);

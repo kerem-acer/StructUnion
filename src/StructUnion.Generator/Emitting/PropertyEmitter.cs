@@ -58,7 +58,7 @@ static class PropertyEmitter
             foreach (var param in variant.Parameters)
             {
                 var propName = $"{variant.Name}{CSharpIdentifiers.ToPascalCase(param.Name)}";
-                var field = model.VariantField(variant.Name, param.Name);
+                var field = variant.FieldName(param.Name);
 
                 sb.AppendLine($"public {param.TypeFullyQualified} {propName}");
                 using (sb.Block())
@@ -87,7 +87,7 @@ static class PropertyEmitter
             }
 
             var args = string.Join(", ", variant.Parameters.Select(p =>
-                model.VariantField(variant.Name, p.Name)));
+                variant.FieldName(p.Name)));
 
             sb.AppendLine($"public Cases.{variant.Name} As{variant.Name}");
             using (sb.Block())
@@ -125,7 +125,7 @@ static class PropertyEmitter
             {
                 foreach (var param in variant.Parameters)
                 {
-                    var field = model.VariantField(variant.Name, param.Name);
+                    var field = variant.FieldName(param.Name);
                     sb.AppendLine($"{CSharpIdentifiers.EscapeKeyword(param.Name)} = {field};");
                 }
                 sb.AppendLine("return true;");
@@ -157,7 +157,7 @@ static class PropertyEmitter
         using (sb.Block())
         {
             var args = string.Join(", ", variant.Parameters.Select(p =>
-                model.VariantField(variant.Name, p.Name)));
+                variant.FieldName(p.Name)));
 
             sb.AppendLine($"if ({tag} == Tags.{variant.Name})");
             using (sb.Block())

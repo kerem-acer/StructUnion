@@ -8,7 +8,17 @@ namespace StructUnion.Generator.Infrastructure;
 /// </summary>
 sealed class SourceBuilder
 {
-    readonly StringBuilder _sb = new();
+    static readonly string[] IndentStrings = CreateIndentStrings(16);
+
+    static string[] CreateIndentStrings(int count)
+    {
+        var result = new string[count];
+        for (var i = 0; i < count; i++)
+            result[i] = new string(' ', i * 4);
+        return result;
+    }
+
+    readonly StringBuilder _sb = new(4096);
     int _indent;
     bool _needsIndent = true;
 
@@ -58,13 +68,13 @@ sealed class SourceBuilder
         return this;
     }
 
-    public IDisposable Block()
+    public BlockScope Block()
     {
         OpenBrace();
         return new BlockScope(this);
     }
 
-    public IDisposable Indent()
+    public IndentScope Indent()
     {
         _indent++;
         return new IndentScope(this);
@@ -78,20 +88,22 @@ sealed class SourceBuilder
         }
 
         _needsIndent = false;
-        for (var i = 0; i < _indent; i++)
+        if (_indent > 0)
         {
-            _sb.Append("    ");
+            _sb.Append(_indent < IndentStrings.Length
+                ? IndentStrings[_indent]
+                : new string(' ', _indent * 4));
         }
     }
 
     public override string ToString() => _sb.ToString();
 
-    sealed class BlockScope(SourceBuilder builder) : IDisposable
+    internal ref struct BlockScope(SourceBuilder builder)
     {
         public void Dispose() => builder.CloseBrace();
     }
 
-    sealed class IndentScope(SourceBuilder builder) : IDisposable
+    internal ref struct IndentScope(SourceBuilder builder)
     {
         public void Dispose()
         {

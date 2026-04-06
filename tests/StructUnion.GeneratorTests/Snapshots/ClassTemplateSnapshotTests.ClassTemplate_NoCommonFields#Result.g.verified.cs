@@ -144,12 +144,32 @@ public readonly partial struct Result : global::System.IEquatable<Result>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, int, TResult> ok, global::System.Func<TState, int, string, TResult> error)
+    {
+        return _tag switch
+        {
+            Tags.Ok => ok(state, _ok_Value),
+            Tags.Error => error(state, _error_Code, _error_Message),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<int> ok, global::System.Action<int, string> error)
     {
         switch (_tag)
         {
             case Tags.Ok: ok(_ok_Value); break;
             case Tags.Error: error(_error_Code, _error_Message); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, int> ok, global::System.Action<TState, int, string> error)
+    {
+        switch (_tag)
+        {
+            case Tags.Ok: ok(state, _ok_Value); break;
+            case Tags.Error: error(state, _error_Code, _error_Message); break;
             default: ThrowUnknownTag(); break;
         }
     }

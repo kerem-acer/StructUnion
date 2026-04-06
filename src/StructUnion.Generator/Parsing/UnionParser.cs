@@ -23,36 +23,93 @@ static class UnionParser
         EnableImplicitConversions: true,
         NestedAccessors: false);
 
-    public static ParseResult Parse(GeneratorAttributeSyntaxContext ctx, CancellationToken ct)
+    // ── Phase 1: Transform (per-type, cached by incremental generator) ──
+
+    /// <summary>
+    /// Extracts per-type data from Roslyn symbols. Does NOT read assembly options
+    /// (that would break incremental caching). Assembly-option-dependent validation
+    /// is deferred to <see cref="ResolveAndBuild"/>.
+    /// </summary>
+    public static TransformResult ExtractTypeData(GeneratorAttributeSyntaxContext ctx, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
         if (ctx.TargetSymbol is not INamedTypeSymbol symbol)
         {
-            return new ParseResult(null, EquatableArray<DiagnosticInfo>.Empty);
+            return new TransformResult(null, EquatableArray<DiagnosticInfo>.Empty);
         }
 
         return ctx.TargetNode switch
         {
-            StructDeclarationSyntax structSyntax => ParseStruct(ctx, symbol, structSyntax, ct),
-            RecordDeclarationSyntax => ParseTemplate(ctx, symbol, ct),
-            ClassDeclarationSyntax => ParseTemplate(ctx, symbol, ct),
-            _ => new ParseResult(null, EquatableArray<DiagnosticInfo>.Empty)
+            StructDeclarationSyntax structSyntax => ExtractStruct(ctx, symbol, structSyntax, ct),
+            RecordDeclarationSyntax => ExtractTemplate(ctx, symbol, ct),
+            ClassDeclarationSyntax => ExtractTemplate(ctx, symbol, ct),
+            _ => new TransformResult(null, EquatableArray<DiagnosticInfo>.Empty)
         };
     }
 
-    // ── Struct API ──
+    // ── Phase 2: Resolve + Build (after Combine with assembly options) ──
 
-    static ParseResult ParseStruct(
+    /// <summary>
+    /// Resolves the options cascade (per-type → assembly → defaults), performs
+    /// option-dependent validation, and builds the final <see cref="UnionModel"/>.
+    /// </summary>
+    public static ParseResult ResolveAndBuild(TypeExtract data, AssemblyOptions asm)
+    {
+        var enableImplicit = data.PerTypeImplicit ?? asm.EnableImplicit ?? Defaults.EnableImplicitConversions;
+        var tagPropertyName = data.PerTypeTag ?? asm.TagPropertyName ?? Defaults.TagPropertyName;
+        var nestedAccessors = data.PerTypeNested ?? asm.NestedAccessors ?? Defaults.NestedAccessors;
+        var effectiveSuffix = data.PerTypeSuffix ?? asm.TemplateSuffix ?? Defaults.TemplateSuffix;
+
+        var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
+        var location = data.Location;
+
+        // Derive struct name (for template mode)
+        var structName = data.Mode == GenerationMode.RecordTemplate
+            ? NamingConventions.DeriveStructName(data.SymbolName, data.GeneratedName, effectiveSuffix)
+            : data.SymbolName;
+
+        // Validate GeneratedName and TagPropertyName as valid C# identifiers
+        if (data.GeneratedName is not null && !CSharpIdentifiers.IsValidIdentifier(data.GeneratedName))
+        {
+            diagnostics.Add(DiagnosticInfo.Create(
+                DiagnosticDescriptors.InvalidIdentifier, location,
+                data.GeneratedName, "GeneratedName", data.SymbolName));
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        if (data.PerTypeTag is not null && !CSharpIdentifiers.IsValidIdentifier(data.PerTypeTag))
+        {
+            diagnostics.Add(DiagnosticInfo.Create(
+                DiagnosticDescriptors.InvalidIdentifier, location,
+                data.PerTypeTag, "TagPropertyName", data.SymbolName));
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        if (HasReservedVariantName(data.Variants, data.SymbolName, nestedAccessors, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        if (HasTagPropertyNameConflict(data.Variants, data.CommonFields, tagPropertyName, data.SymbolName, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        var model = BuildModel(data, structName, enableImplicit, tagPropertyName, nestedAccessors);
+
+        CheckLargeStruct(model, location, diagnostics);
+
+        return new ParseResult(model, diagnostics.ToImmutable().ToEquatableArray());
+    }
+
+    // ── Struct API extraction ──
+
+    static TransformResult ExtractStruct(
         GeneratorAttributeSyntaxContext ctx, INamedTypeSymbol symbol,
         StructDeclarationSyntax syntax, CancellationToken ct)
     {
-        var (perTypeImplicit, _, perTypeTag, perTypeNested, _) = ctx.GetStructUnionAttributeProps();
-        var (asmTag, _, asmImplicit, asmNested) = ctx.SemanticModel.Compilation.GetAssemblyOptions();
-
-        var enableImplicit = perTypeImplicit ?? asmImplicit ?? Defaults.EnableImplicitConversions;
-        var tagPropertyName = perTypeTag ?? asmTag ?? Defaults.TagPropertyName;
-        var nestedAccessors = perTypeNested ?? asmNested ?? Defaults.NestedAccessors;
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = syntax.Identifier.GetLocation();
 
@@ -60,19 +117,19 @@ static class UnionParser
         {
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.StructMustBePartial, location, symbol.Name));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         if (!syntax.Modifiers.Any(SyntaxKind.ReadOnlyKeyword))
         {
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.StructMustBeReadonly, location, symbol.Name));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         // Variants: static partial methods returning Self
         var variants = ImmutableArray.CreateBuilder<VariantModel>();
-        byte tag = FirstVariantTag;
+        var tagValue = (int)FirstVariantTag;
         foreach (var member in symbol.GetMembers())
         {
             ct.ThrowIfCancellationRequested();
@@ -95,14 +152,15 @@ static class UnionParser
                 continue;
             }
 
-            variants.Add(new VariantModel(method.Name, parameters.Value.ToEquatableArray(), tag++));
+            variants.Add(new VariantModel(method.Name, parameters.Value.ToEquatableArray(), (byte)tagValue));
+            tagValue++;
         }
 
         if (variants.Count == 0)
         {
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.NoVariantsFound, location, symbol.Name));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         if (variants.Count > MaxVariants)
@@ -110,42 +168,43 @@ static class UnionParser
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.TooManyVariants, location,
                 symbol.Name, variants.Count.ToString()));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         if (HasCaseInsensitiveDuplicate(variants, location, diagnostics))
         {
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
-        if (HasReservedVariantName(variants, symbol.Name, nestedAccessors, location, diagnostics))
+        if (generatedName is not null && perTypeSuffix is not null)
         {
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            diagnostics.Add(DiagnosticInfo.Create(
+                DiagnosticDescriptors.GeneratedNameAndSuffixConflict, location, symbol.Name));
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
-        var noCommonFields = ImmutableArray<FieldModel>.Empty;
-        var variantsArr = variants.ToImmutable();
+        var extract = new TypeExtract(
+            symbol.GetNamespaceString(),
+            symbol.GetContainingTypeChain(),
+            symbol.GetAccessibilityString(),
+            symbol.Name,
+            symbol.GetTypeParameterModels(),
+            variants.ToImmutable().ToEquatableArray(),
+            ImmutableArray<FieldModel>.Empty.ToEquatableArray(),
+            GenerationMode.PartialStruct,
+            "",
+            perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix,
+            DiagnosticLocation.From(location));
 
-        if (HasTagPropertyNameConflict(variantsArr, noCommonFields, tagPropertyName, symbol.Name, location, diagnostics))
-        {
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
-        }
-
-        var model = BuildModel(symbol, variantsArr, noCommonFields, enableImplicit,
-            symbol.Name, GenerationMode.PartialStruct, tagPropertyName, nestedAccessors);
-
-        CheckLargeStruct(model, location, diagnostics);
-
-        return new ParseResult(model, diagnostics.ToImmutable().ToEquatableArray());
+        return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
     }
 
-    // ── Template API (record or class) ──
+    // ── Template API extraction ──
 
-    static ParseResult ParseTemplate(
+    static TransformResult ExtractTemplate(
         GeneratorAttributeSyntaxContext ctx, INamedTypeSymbol symbol, CancellationToken ct)
     {
         var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix) = ctx.GetStructUnionAttributeProps();
-        var (asmTag, asmSuffix, asmImplicit, asmNested) = ctx.SemanticModel.Compilation.GetAssemblyOptions();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = ctx.TargetNode.GetLocation();
 
@@ -153,34 +212,28 @@ static class UnionParser
         {
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.GeneratedNameAndSuffixConflict, location, symbol.Name));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
-
-        var enableImplicit = perTypeImplicit ?? asmImplicit ?? Defaults.EnableImplicitConversions;
-        var tagPropertyName = perTypeTag ?? asmTag ?? Defaults.TagPropertyName;
-        var nestedAccessors = perTypeNested ?? asmNested ?? Defaults.NestedAccessors;
-        var effectiveSuffix = perTypeSuffix ?? asmSuffix ?? Defaults.TemplateSuffix;
-
-        var structName = NamingConventions.DeriveStructName(symbol.Name, generatedName, effectiveSuffix);
 
         // Common fields from primary constructor params + declared properties
         var commonFields = ExtractTemplateCommonFields(symbol);
 
         // Variants: nested types (records or classes)
         var variants = ImmutableArray.CreateBuilder<VariantModel>();
-        byte tag = FirstVariantTag;
+        var tagValue = (int)FirstVariantTag;
         foreach (var nested in symbol.GetTypeMembers())
         {
             ct.ThrowIfCancellationRequested();
             variants.Add(new VariantModel(
-                nested.Name, ExtractNestedTypeParameters(nested).ToEquatableArray(), tag++));
+                nested.Name, ExtractNestedTypeParameters(nested).ToEquatableArray(), (byte)tagValue));
+            tagValue++;
         }
 
         if (variants.Count == 0)
         {
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.NoVariantsFound, location, symbol.Name));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         if (variants.Count > MaxVariants)
@@ -188,47 +241,41 @@ static class UnionParser
             diagnostics.Add(DiagnosticInfo.Create(
                 DiagnosticDescriptors.TooManyVariants, location,
                 symbol.Name, variants.Count.ToString()));
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         if (HasCaseInsensitiveDuplicate(variants, location, diagnostics))
         {
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
-        }
-
-        if (HasReservedVariantName(variants, symbol.Name, nestedAccessors, location, diagnostics))
-        {
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
-        }
-
-        if (HasTagPropertyNameConflict(variants.ToImmutable(), commonFields.ToImmutable(), tagPropertyName, symbol.Name, location, diagnostics))
-        {
-            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+            return new TransformResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
         var templateKeyword = symbol.IsRecord ? "record" : "class";
-        var model = BuildModel(symbol, variants.ToImmutable(), commonFields.ToImmutable(), enableImplicit,
-            structName, GenerationMode.RecordTemplate, tagPropertyName, nestedAccessors, symbol.Name, templateKeyword);
 
-        CheckLargeStruct(model, location, diagnostics);
+        var extract = new TypeExtract(
+            symbol.GetNamespaceString(),
+            symbol.GetContainingTypeChain(),
+            symbol.GetAccessibilityString(),
+            symbol.Name,
+            symbol.GetTypeParameterModels(),
+            variants.ToImmutable().ToEquatableArray(),
+            commonFields.ToImmutable().ToEquatableArray(),
+            GenerationMode.RecordTemplate,
+            templateKeyword,
+            perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix,
+            DiagnosticLocation.From(location));
 
-        return new ParseResult(model, diagnostics.ToImmutable().ToEquatableArray());
+        return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
     }
 
-    // ── Shared model builder ──
+    // ── Model builder ──
 
     static UnionModel BuildModel(
-        INamedTypeSymbol symbol,
-        ImmutableArray<VariantModel> variants,
-        ImmutableArray<FieldModel> commonFields,
-        bool enableImplicit,
-        string name,
-        GenerationMode mode,
-        string tagPropertyName,
-        bool nestedAccessors,
-        string templateTypeName = "",
-        string templateTypeKeyword = "")
+        TypeExtract data, string structName, bool enableImplicit,
+        string tagPropertyName, bool nestedAccessors)
     {
+        var variants = data.Variants.AsImmutableArray();
+        var commonFields = data.CommonFields.AsImmutableArray();
+
         var layout = LayoutCalculator.DetermineStrategy(variants, commonFields);
         var (refZoneOffset, valueZoneOffset) = layout == LayoutStrategy.Explicit
             ? LayoutCalculator.ComputeZoneOffsets(commonFields, variants)
@@ -238,17 +285,21 @@ static class UnionParser
             : (0, 0);
 
         return new UnionModel(
-            symbol.GetNamespaceString(),
-            symbol.GetContainingTypeChain(),
-            symbol.GetAccessibilityString(),
-            name,
-            symbol.GetTypeParameterModels(),
-            variants.ToEquatableArray(),
-            commonFields.ToEquatableArray(),
+            data.Namespace,
+            data.ContainingTypes,
+            data.Accessibility,
+            structName,
+            data.TypeParameters,
+            data.Variants,
+            data.CommonFields,
             layout, enableImplicit, refZoneOffset, valueZoneOffset,
-            totalSize, structAlignment, mode,
-            tagPropertyName, nestedAccessors, templateTypeName, templateTypeKeyword);
+            totalSize, structAlignment, data.Mode,
+            tagPropertyName, nestedAccessors,
+            data.Mode == GenerationMode.RecordTemplate ? data.SymbolName : "",
+            data.TemplateTypeKeyword);
     }
+
+    // ── Validation helpers ──
 
     static bool HasCaseInsensitiveDuplicate(
         ImmutableArray<VariantModel>.Builder variants,
@@ -279,10 +330,10 @@ static class UnionParser
     };
 
     static bool HasReservedVariantName(
-        ImmutableArray<VariantModel>.Builder variants,
+        EquatableArray<VariantModel> variants,
         string typeName,
         bool nestedAccessors,
-        Location location,
+        DiagnosticLocation location,
         ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
         foreach (var variant in variants)
@@ -301,11 +352,11 @@ static class UnionParser
     }
 
     static bool HasTagPropertyNameConflict(
-        ImmutableArray<VariantModel> variants,
-        ImmutableArray<FieldModel> commonFields,
+        EquatableArray<VariantModel> variants,
+        EquatableArray<FieldModel> commonFields,
         string tagPropertyName,
         string typeName,
-        Location location,
+        DiagnosticLocation location,
         ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
         // Check if any variant name matches the tag property name
@@ -336,7 +387,7 @@ static class UnionParser
     }
 
     static void CheckLargeStruct(
-        UnionModel model, Location location, ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+        UnionModel model, DiagnosticLocation location, ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
         var commonSize = 0;
         foreach (var field in model.CommonFields)
@@ -460,8 +511,9 @@ static class UnionParser
         return result.ToImmutable();
     }
 
-    static FieldModel CreateFieldModel(string name, ITypeSymbol type, Accessibility access) =>
-        new(name, type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            access.ToAccessibilityString(), type.IsValueType, type.IsUnmanagedType,
-            TypeClassifier.GetSize(type), TypeClassifier.GetAlignment(type));
+    static FieldModel CreateFieldModel(string name, ITypeSymbol type, Accessibility access)
+    {
+        var (fqn, size, alignment) = TypeClassifier.Classify(type);
+        return new(name, fqn, access.ToAccessibilityString(), type.IsValueType, type.IsUnmanagedType, size, alignment);
+    }
 }

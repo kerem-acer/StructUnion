@@ -57,7 +57,7 @@ static class FactoryEmitter
 
             foreach (var param in variant.Parameters)
             {
-                var field = model.VariantField(variant.Name, param.Name);
+                var field = variant.FieldName(param.Name);
                 sb.AppendLine($"global::System.Runtime.CompilerServices.Unsafe.AsRef(in result.{field}) = {CSharpIdentifiers.ToCamelCase(param.Name)};");
             }
 

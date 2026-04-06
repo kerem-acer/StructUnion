@@ -94,6 +94,14 @@ static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor InvalidIdentifier = new(
+        id: "SU0012",
+        title: "Invalid C# identifier",
+        messageFormat: "The value '{0}' is not a valid C# identifier for use as {1} on '{2}'",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static DiagnosticDescriptor GetById(string id) => id switch
     {
         "SU0001" => StructMustBePartial,
@@ -107,6 +115,7 @@ static class DiagnosticDescriptors
         "SU0009" => TagPropertyNameConflict,
         "SU0010" => GeneratedNameAndSuffixConflict,
         "SU0011" => ReservedVariantName,
+        "SU0012" => InvalidIdentifier,
         _ => throw new ArgumentException($"Unknown diagnostic id: {id}", nameof(id))
     };
 }

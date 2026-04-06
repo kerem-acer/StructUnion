@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+
 namespace StructUnion.Generator.Infrastructure;
 
 static class CSharpIdentifiers
@@ -40,4 +42,7 @@ static class CSharpIdentifiers
 
         return char.ToUpperInvariant(name[0]) + name.Substring(1);
     }
+
+    public static bool IsValidIdentifier(string? name) =>
+        !string.IsNullOrEmpty(name) && SyntaxFacts.IsValidIdentifier(name);
 }

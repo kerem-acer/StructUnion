@@ -144,12 +144,32 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, TResult> circle, global::System.Func<TState, double, double, TResult> rectangle)
+    {
+        return _tag switch
+        {
+            Tags.Circle => circle(state, _circle_radius),
+            Tags.Rectangle => rectangle(state, _rectangle_length, _rectangle_width),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double> circle, global::System.Action<double, double> rectangle)
     {
         switch (_tag)
         {
             case Tags.Circle: circle(_circle_radius); break;
             case Tags.Rectangle: rectangle(_rectangle_length, _rectangle_width); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, double> circle, global::System.Action<TState, double, double> rectangle)
+    {
+        switch (_tag)
+        {
+            case Tags.Circle: circle(state, _circle_radius); break;
+            case Tags.Rectangle: rectangle(state, _rectangle_length, _rectangle_width); break;
             default: ThrowUnknownTag(); break;
         }
     }
@@ -161,8 +181,8 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_radius, other._circle_radius),
-            Tags.Rectangle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_length, other._rectangle_length) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rectangle_width, other._rectangle_width),
+            Tags.Circle => _circle_radius.Equals(other._circle_radius),
+            Tags.Rectangle => _rectangle_length.Equals(other._rectangle_length) && _rectangle_width.Equals(other._rectangle_width),
             _ => true
         };
     }

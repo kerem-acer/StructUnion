@@ -127,6 +127,16 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, TResult> circle, global::System.Func<TState, double, TResult> square)
+    {
+        return _tag switch
+        {
+            Tags.Circle => circle(state, _circle_Radius),
+            Tags.Square => square(state, _square_Side),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double> circle, global::System.Action<double> square)
     {
         switch (_tag)
@@ -137,13 +147,23 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
         }
     }
 
+    public void Match<TState>(TState state, global::System.Action<TState, double> circle, global::System.Action<TState, double> square)
+    {
+        switch (_tag)
+        {
+            case Tags.Circle: circle(state, _circle_Radius); break;
+            case Tags.Square: square(state, _square_Side); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
     public bool Equals(MyShape other)
     {
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),
-            Tags.Square => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_square_Side, other._square_Side),
+            Tags.Circle => _circle_Radius.Equals(other._circle_Radius),
+            Tags.Square => _square_Side.Equals(other._square_Side),
             _ => true
         };
     }

@@ -29,6 +29,39 @@ static class TypeClassifier
         ["global::System.UInt128"] = (16, 8),
     };
 
+    /// <summary>
+    /// Returns (fqn, size, alignment) in a single pass, calling ToDisplayString only once.
+    /// Use this for top-level field classification to avoid redundant Roslyn calls.
+    /// </summary>
+    public static (string Fqn, int Size, int Alignment) Classify(ITypeSymbol type)
+    {
+        if (type.TypeKind == TypeKind.TypeParameter)
+        {
+            return (type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), -1, -1);
+        }
+
+        if (!type.IsValueType)
+        {
+            return (type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), ReferenceSize, ReferenceAlignment);
+        }
+
+        var sizeFromSpecial = GetSizeFromSpecialType(type.SpecialType);
+        if (sizeFromSpecial > 0)
+        {
+            return (type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                sizeFromSpecial, GetAlignmentFromSpecialType(type.SpecialType));
+        }
+
+        var fqn = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        if (WellKnownTypes.TryGetValue(fqn, out var known))
+        {
+            return (fqn, known.Size, known.Alignment);
+        }
+
+        var (size, alignment) = TryComputeStruct(type);
+        return (fqn, size, alignment);
+    }
+
     public static int GetSize(ITypeSymbol type)
     {
         if (type.TypeKind == TypeKind.TypeParameter)
@@ -53,7 +86,7 @@ static class TypeClassifier
             return known.Size;
         }
 
-        return TryComputeStructSize(type);
+        return TryComputeStruct(type).Size;
     }
 
     public static int GetAlignment(ITypeSymbol type)
@@ -80,7 +113,7 @@ static class TypeClassifier
             return known.Alignment;
         }
 
-        return TryComputeStructAlignment(type);
+        return TryComputeStruct(type).Alignment;
     }
 
     public static int Align(int offset, int alignment) =>
@@ -126,16 +159,21 @@ static class TypeClassifier
         _ => 0
     };
 
-    static int TryComputeStructSize(ITypeSymbol type)
+    /// <summary>
+    /// Computes both size and alignment for a struct type in a single pass,
+    /// avoiding duplicate GetSize/GetAlignment calls on each field.
+    /// </summary>
+    static (int Size, int Alignment) TryComputeStruct(ITypeSymbol type)
     {
         if (type.TypeKind == TypeKind.Enum)
         {
-            return GetSize(((INamedTypeSymbol)type).EnumUnderlyingType!);
+            var underlying = ((INamedTypeSymbol)type).EnumUnderlyingType!;
+            return (GetSize(underlying), GetAlignment(underlying));
         }
 
         if (!type.IsValueType || type is not INamedTypeSymbol named)
         {
-            return -1;
+            return (-1, -1);
         }
 
         var totalSize = 0;
@@ -151,7 +189,7 @@ static class TypeClassifier
             var fieldAlignment = GetAlignment(field.Type);
             if (fieldSize < 0 || fieldAlignment < 0)
             {
-                return -1;
+                return (-1, -1);
             }
 
             totalSize = Align(totalSize, fieldAlignment);
@@ -159,38 +197,6 @@ static class TypeClassifier
             maxAlignment = Math.Max(maxAlignment, fieldAlignment);
         }
 
-        return Align(totalSize, maxAlignment);
-    }
-
-    static int TryComputeStructAlignment(ITypeSymbol type)
-    {
-        if (type.TypeKind == TypeKind.Enum)
-        {
-            return GetAlignment(((INamedTypeSymbol)type).EnumUnderlyingType!);
-        }
-
-        if (!type.IsValueType || type is not INamedTypeSymbol named)
-        {
-            return -1;
-        }
-
-        var maxAlignment = 1;
-        foreach (var member in named.GetMembers())
-        {
-            if (member is not IFieldSymbol { IsStatic: false, IsConst: false } field)
-            {
-                continue;
-            }
-
-            var fieldAlignment = GetAlignment(field.Type);
-            if (fieldAlignment < 0)
-            {
-                return -1;
-            }
-
-            maxAlignment = Math.Max(maxAlignment, fieldAlignment);
-        }
-
-        return maxAlignment;
+        return (Align(totalSize, maxAlignment), maxAlignment);
     }
 }

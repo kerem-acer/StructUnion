@@ -46,17 +46,27 @@ public class UnionModelTests
     }
 
     [Test]
-    public async Task VariantField_FormatsCorrectly()
+    public async Task VariantModel_FieldName_FormatsCorrectly()
     {
-        var model = MakeModel();
-        await Assert.That(model.VariantField("Circle", "radius")).IsEqualTo("_circle_radius");
+        var variant = new VariantModel("Circle",
+            ImmutableArray.Create(new FieldModel("radius", "double", "public", true, true, 8, 8)).ToEquatableArray(), 1);
+        await Assert.That(variant.FieldName("radius")).IsEqualTo("_circle_radius");
     }
 
     [Test]
-    public async Task VariantField_MixedCase()
+    public async Task VariantModel_FieldName_MixedCase()
     {
-        var model = MakeModel();
-        await Assert.That(model.VariantField("UserCreated", "Name")).IsEqualTo("_usercreated_Name");
+        var variant = new VariantModel("UserCreated",
+            ImmutableArray<FieldModel>.Empty.ToEquatableArray(), 1);
+        await Assert.That(variant.FieldName("Name")).IsEqualTo("_usercreated_Name");
+    }
+
+    [Test]
+    public async Task VariantModel_NameLower()
+    {
+        var variant = new VariantModel("Circle",
+            ImmutableArray<FieldModel>.Empty.ToEquatableArray(), 1);
+        await Assert.That(variant.NameLower).IsEqualTo("circle");
     }
 
     [Test]

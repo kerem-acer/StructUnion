@@ -205,6 +205,18 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, int, TResult> intCase, global::System.Func<TState, long, TResult> longCase, global::System.Func<TState, byte, TResult> byteCase, global::System.Func<TState, float, TResult> floatCase)
+    {
+        return _tag switch
+        {
+            Tags.IntCase => intCase(state, _intcase_value),
+            Tags.LongCase => longCase(state, _longcase_value),
+            Tags.ByteCase => byteCase(state, _bytecase_value),
+            Tags.FloatCase => floatCase(state, _floatcase_value),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<int> intCase, global::System.Action<long> longCase, global::System.Action<byte> byteCase, global::System.Action<float> floatCase)
     {
         switch (_tag)
@@ -213,6 +225,18 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
             case Tags.LongCase: longCase(_longcase_value); break;
             case Tags.ByteCase: byteCase(_bytecase_value); break;
             case Tags.FloatCase: floatCase(_floatcase_value); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, int> intCase, global::System.Action<TState, long> longCase, global::System.Action<TState, byte> byteCase, global::System.Action<TState, float> floatCase)
+    {
+        switch (_tag)
+        {
+            case Tags.IntCase: intCase(state, _intcase_value); break;
+            case Tags.LongCase: longCase(state, _longcase_value); break;
+            case Tags.ByteCase: byteCase(state, _bytecase_value); break;
+            case Tags.FloatCase: floatCase(state, _floatcase_value); break;
             default: ThrowUnknownTag(); break;
         }
     }
@@ -230,7 +254,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
             Tags.IntCase => _intcase_value == other._intcase_value,
             Tags.LongCase => _longcase_value == other._longcase_value,
             Tags.ByteCase => _bytecase_value == other._bytecase_value,
-            Tags.FloatCase => global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(_floatcase_value, other._floatcase_value),
+            Tags.FloatCase => _floatcase_value.Equals(other._floatcase_value),
             _ => true
         };
     }

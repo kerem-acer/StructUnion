@@ -88,11 +88,29 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, int, TResult> value)
+    {
+        return _tag switch
+        {
+            Tags.Value => value(state, _value_x),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<int> value)
     {
         switch (_tag)
         {
             case Tags.Value: value(_value_x); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, int> value)
+    {
+        switch (_tag)
+        {
+            case Tags.Value: value(state, _value_x); break;
             default: ThrowUnknownTag(); break;
         }
     }

@@ -35,36 +35,39 @@ readonly record struct UnionModel(
 
     public string TagField => "_tag";
 
-    public string VariantField(string variantName, string paramName) =>
-        $"_{variantName.ToLowerInvariant()}_{paramName}";
+    /// <summary>Pre-computed hint name for AddSource.</summary>
+    public string FullHintName { get; } = BuildFullHintName(Namespace, ContainingTypes, Name);
 
-    public string FullHintName
+    /// <summary>Pre-computed type name with generic parameters for declarations.</summary>
+    public string TypeNameWithParameters { get; } = BuildTypeNameWithParameters(Name, TypeParameters);
+
+    static string BuildFullHintName(string ns, EquatableArray<string> containingTypes, string name)
     {
-        get
+        var prefix = ns.Length > 0 ? $"{ns}." : "";
+        foreach (var ct in containingTypes)
         {
-            var prefix = Namespace.Length > 0 ? $"{Namespace}." : "";
-            foreach (var ct in ContainingTypes)
-            {
-                var name = ct.Substring(ct.LastIndexOf(' ') + 1);
-                var genericIdx = name.IndexOf('<');
-                if (genericIdx >= 0) name = name.Substring(0, genericIdx);
-                prefix += $"{name}.";
-            }
-
-            return $"{prefix}{Name}";
+            var ctName = ct.Substring(ct.LastIndexOf(' ') + 1);
+            var genericIdx = ctName.IndexOf('<');
+            if (genericIdx >= 0) ctName = ctName.Substring(0, genericIdx);
+            prefix += $"{ctName}.";
         }
+
+        return $"{prefix}{name}";
     }
 
-    public string TypeNameWithParameters
+    static string BuildTypeNameWithParameters(string name, EquatableArray<TypeParameterModel> typeParameters)
     {
-        get
+        if (typeParameters.Count == 0)
         {
-            if (TypeParameters.Count == 0)
-            {
-                return Name;
-            }
-
-            return $"{Name}<{string.Join(", ", TypeParameters.Select(tp => tp.Name))}>";
+            return name;
         }
+
+        var names = new string[typeParameters.Count];
+        for (var i = 0; i < typeParameters.Count; i++)
+        {
+            names[i] = typeParameters[i].Name;
+        }
+
+        return $"{name}<{string.Join(", ", names)}>";
     }
 }

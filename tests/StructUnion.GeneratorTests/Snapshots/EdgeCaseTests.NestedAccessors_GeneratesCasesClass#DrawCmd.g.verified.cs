@@ -181,6 +181,17 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, double, TResult> moveTo, global::System.Func<TState, double, double, TResult> lineTo, global::System.Func<TState, TResult> close)
+    {
+        return _tag switch
+        {
+            Tags.MoveTo => moveTo(state, _moveto_x, _moveto_y),
+            Tags.LineTo => lineTo(state, _lineto_x, _lineto_y),
+            Tags.Close => close(state),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double, double> moveTo, global::System.Action<double, double> lineTo, global::System.Action close)
     {
         switch (_tag)
@@ -192,13 +203,24 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         }
     }
 
+    public void Match<TState>(TState state, global::System.Action<TState, double, double> moveTo, global::System.Action<TState, double, double> lineTo, global::System.Action<TState> close)
+    {
+        switch (_tag)
+        {
+            case Tags.MoveTo: moveTo(state, _moveto_x, _moveto_y); break;
+            case Tags.LineTo: lineTo(state, _lineto_x, _lineto_y); break;
+            case Tags.Close: close(state); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
     public bool Equals(DrawCmd other)
     {
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.MoveTo => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_moveto_x, other._moveto_x) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_moveto_y, other._moveto_y),
-            Tags.LineTo => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_lineto_x, other._lineto_x) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_lineto_y, other._lineto_y),
+            Tags.MoveTo => _moveto_x.Equals(other._moveto_x) && _moveto_y.Equals(other._moveto_y),
+            Tags.LineTo => _lineto_x.Equals(other._lineto_x) && _lineto_y.Equals(other._lineto_y),
             Tags.Close => true,
             _ => true
         };

@@ -127,6 +127,16 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, TResult> celsius, global::System.Func<TState, double, TResult> fahrenheit)
+    {
+        return _tag switch
+        {
+            Tags.Celsius => celsius(state, _celsius_value),
+            Tags.Fahrenheit => fahrenheit(state, _fahrenheit_value),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double> celsius, global::System.Action<double> fahrenheit)
     {
         switch (_tag)
@@ -137,13 +147,23 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
         }
     }
 
+    public void Match<TState>(TState state, global::System.Action<TState, double> celsius, global::System.Action<TState, double> fahrenheit)
+    {
+        switch (_tag)
+        {
+            case Tags.Celsius: celsius(state, _celsius_value); break;
+            case Tags.Fahrenheit: fahrenheit(state, _fahrenheit_value); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
     public bool Equals(NumberUnion other)
     {
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Celsius => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_celsius_value, other._celsius_value),
-            Tags.Fahrenheit => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_fahrenheit_value, other._fahrenheit_value),
+            Tags.Celsius => _celsius_value.Equals(other._celsius_value),
+            Tags.Fahrenheit => _fahrenheit_value.Equals(other._fahrenheit_value),
             _ => true
         };
     }

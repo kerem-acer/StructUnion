@@ -144,12 +144,32 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, TResult> circle, global::System.Func<TState, double, double, TResult> rect)
+    {
+        return _tag switch
+        {
+            Tags.Circle => circle(state, _circle_radius),
+            Tags.Rect => rect(state, _rect_w, _rect_h),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<double> circle, global::System.Action<double, double> rect)
     {
         switch (_tag)
         {
             case Tags.Circle: circle(_circle_radius); break;
             case Tags.Rect: rect(_rect_w, _rect_h); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, double> circle, global::System.Action<TState, double, double> rect)
+    {
+        switch (_tag)
+        {
+            case Tags.Circle: circle(state, _circle_radius); break;
+            case Tags.Rect: rect(state, _rect_w, _rect_h); break;
             default: ThrowUnknownTag(); break;
         }
     }
@@ -161,8 +181,8 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_radius, other._circle_radius),
-            Tags.Rect => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rect_w, other._rect_w) && global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_rect_h, other._rect_h),
+            Tags.Circle => _circle_radius.Equals(other._circle_radius),
+            Tags.Rect => _rect_w.Equals(other._rect_w) && _rect_h.Equals(other._rect_h),
             _ => true
         };
     }

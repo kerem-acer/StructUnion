@@ -183,6 +183,17 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
         };
     }
 
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, string, TResult> text, global::System.Func<TState, int, TResult> number, global::System.Func<TState, string, int, TResult> both)
+    {
+        return _tag switch
+        {
+            Tags.Text => text(state, _text_Value),
+            Tags.Number => number(state, _number_Value),
+            Tags.Both => both(state, _both_Name, _both_Age),
+            _ => ThrowUnknownTag<TResult>()
+        };
+    }
+
     public void Match(global::System.Action<string> text, global::System.Action<int> number, global::System.Action<string, int> both)
     {
         switch (_tag)
@@ -190,6 +201,17 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
             case Tags.Text: text(_text_Value); break;
             case Tags.Number: number(_number_Value); break;
             case Tags.Both: both(_both_Name, _both_Age); break;
+            default: ThrowUnknownTag(); break;
+        }
+    }
+
+    public void Match<TState>(TState state, global::System.Action<TState, string> text, global::System.Action<TState, int> number, global::System.Action<TState, string, int> both)
+    {
+        switch (_tag)
+        {
+            case Tags.Text: text(state, _text_Value); break;
+            case Tags.Number: number(state, _number_Value); break;
+            case Tags.Both: both(state, _both_Name, _both_Age); break;
             default: ThrowUnknownTag(); break;
         }
     }

@@ -106,12 +106,32 @@ partial class Outer<T>
             };
         }
 
+        public TResult Match<TState, TResult>(TState state, global::System.Func<TState, T, TResult> a, global::System.Func<TState, int, TResult> b)
+        {
+            return _tag switch
+            {
+                Tags.A => a(state, _a_value),
+                Tags.B => b(state, _b_count),
+                _ => ThrowUnknownTag<TResult>()
+            };
+        }
+
         public void Match(global::System.Action<T> a, global::System.Action<int> b)
         {
             switch (_tag)
             {
                 case Tags.A: a(_a_value); break;
                 case Tags.B: b(_b_count); break;
+                default: ThrowUnknownTag(); break;
+            }
+        }
+
+        public void Match<TState>(TState state, global::System.Action<TState, T> a, global::System.Action<TState, int> b)
+        {
+            switch (_tag)
+            {
+                case Tags.A: a(state, _a_value); break;
+                case Tags.B: b(state, _b_count); break;
                 default: ThrowUnknownTag(); break;
             }
         }

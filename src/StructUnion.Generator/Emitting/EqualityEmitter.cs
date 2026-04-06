@@ -8,8 +8,6 @@ static class EqualityEmitter
     /// <summary>
     /// Types where <c>==</c> is equivalent to <c>EqualityComparer&lt;T&gt;.Default.Equals()</c>.
     /// Excludes float/double/decimal where NaN semantics differ.
-    /// Uses keyword aliases because <see cref="SymbolDisplayFormat.FullyQualifiedFormat"/>
-    /// with UseSpecialTypes produces "int" not "global::System.Int32".
     /// </summary>
     static readonly HashSet<string> DirectEqualityTypes =
     [
@@ -17,10 +15,18 @@ static class EqualityEmitter
         "int", "uint", "long", "ulong", "nint", "nuint"
     ];
 
+    /// <summary>
+    /// Types where instance <c>.Equals()</c> handles NaN correctly (NaN == NaN → true)
+    /// without the virtual dispatch overhead of <c>EqualityComparer&lt;T&gt;.Default</c>.
+    /// </summary>
+    static readonly HashSet<string> InstanceEqualsTypes = ["float", "double"];
+
     static string EmitFieldComparison(string fieldExpr, string otherFieldExpr, string typeFullyQualified) =>
         DirectEqualityTypes.Contains(typeFullyQualified)
             ? $"{fieldExpr} == other.{otherFieldExpr}"
-            : $"global::System.Collections.Generic.EqualityComparer<{typeFullyQualified}>.Default.Equals({fieldExpr}, other.{otherFieldExpr})";
+            : InstanceEqualsTypes.Contains(typeFullyQualified)
+                ? $"{fieldExpr}.Equals(other.{otherFieldExpr})"
+                : $"global::System.Collections.Generic.EqualityComparer<{typeFullyQualified}>.Default.Equals({fieldExpr}, other.{otherFieldExpr})";
 
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
@@ -52,7 +58,7 @@ static class EqualityEmitter
 
                 var comparisons = variant.Parameters.Select(p =>
                 {
-                    var fn = model.VariantField(variant.Name, p.Name);
+                    var fn = variant.FieldName(p.Name);
                     return EmitFieldComparison(fn, fn, p.TypeFullyQualified);
                 });
                 sb.AppendLine($"Tags.{variant.Name} => {string.Join(" && ", comparisons)},");
@@ -106,7 +112,7 @@ static class EqualityEmitter
                         {
                             foreach (var param in variant.Parameters)
                             {
-                                sb.AppendLine($"hash.Add({model.VariantField(variant.Name, param.Name)});");
+                                sb.AppendLine($"hash.Add({variant.FieldName(param.Name)});");
                             }
 
                             sb.AppendLine("break;");
@@ -130,7 +136,7 @@ static class EqualityEmitter
 
                     foreach (var param in variant.Parameters)
                     {
-                        hashParts.Add(model.VariantField(variant.Name, param.Name));
+                        hashParts.Add(variant.FieldName(param.Name));
                     }
 
                     sb.AppendLine($"Tags.{variant.Name} => global::System.HashCode.Combine({string.Join(", ", hashParts)}),");
