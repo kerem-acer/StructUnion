@@ -18,7 +18,6 @@ static class LayoutCalculator
         IReadOnlyList<VariantModel> variants,
         IReadOnlyList<FieldModel> commonFields)
     {
-        // Only fall back to Auto when sizes are unknowable (generic T)
         foreach (var field in commonFields)
         {
             if (field.Size < 0 || field.Alignment < 0)
@@ -31,7 +30,11 @@ static class LayoutCalculator
         {
             foreach (var param in variant.Parameters)
             {
-                if (param.Size < 0 || param.Alignment < 0)
+                // Fall back to Auto when sizes are unknowable (generic T)
+                // or when a field is a managed value type (value type containing
+                // references, e.g. ValueTuple<string, int>). The CLR cannot track
+                // GC roots in managed value types placed in overlapping explicit layout.
+                if (param.Size < 0 || param.Alignment < 0 || IsManagedValueType(param))
                 {
                     return LayoutStrategy.Auto;
                 }
@@ -40,6 +43,13 @@ static class LayoutCalculator
 
         return LayoutStrategy.Explicit;
     }
+
+    /// <summary>
+    /// A managed value type is a value type that contains reference fields.
+    /// These cannot participate in explicit layout with overlapping offsets.
+    /// </summary>
+    static bool IsManagedValueType(FieldModel field) =>
+        field.IsValueType && !field.IsUnmanaged;
 
     /// <summary>
     /// Computes the starting offsets for the ref zone and value zone.

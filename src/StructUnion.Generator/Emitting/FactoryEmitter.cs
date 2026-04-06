@@ -5,6 +5,8 @@ namespace StructUnion.Generator.Emitting;
 
 static class FactoryEmitter
 {
+    const string Inline = "[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]";
+
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
         sb.AppendLine("[global::System.Obsolete(\"Use factory methods instead.\", true)]");
@@ -38,6 +40,7 @@ static class FactoryEmitter
         var paramList = string.Join(", ", allParams);
         var partialKeyword = model.Mode == GenerationMode.PartialStruct ? "partial " : "";
 
+        sb.AppendLine(Inline);
         sb.AppendLine($"public static {partialKeyword}{model.TypeNameWithParameters} {variant.Name}({paramList})");
         using (sb.Block())
         {

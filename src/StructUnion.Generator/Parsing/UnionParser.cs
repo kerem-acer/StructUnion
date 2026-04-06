@@ -118,7 +118,7 @@ static class UnionParser
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
-        if (HasReservedVariantName(variants, symbol.Name, location, diagnostics))
+        if (HasReservedVariantName(variants, symbol.Name, nestedAccessors, location, diagnostics))
         {
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
@@ -196,7 +196,7 @@ static class UnionParser
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
-        if (HasReservedVariantName(variants, symbol.Name, location, diagnostics))
+        if (HasReservedVariantName(variants, symbol.Name, nestedAccessors, location, diagnostics))
         {
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
@@ -281,12 +281,14 @@ static class UnionParser
     static bool HasReservedVariantName(
         ImmutableArray<VariantModel>.Builder variants,
         string typeName,
+        bool nestedAccessors,
         Location location,
         ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
         foreach (var variant in variants)
         {
-            if (ReservedVariantNames.Contains(variant.Name))
+            if (ReservedVariantNames.Contains(variant.Name)
+                || (nestedAccessors && string.Equals(variant.Name, "Cases", StringComparison.OrdinalIgnoreCase)))
             {
                 diagnostics.Add(DiagnosticInfo.Create(
                     DiagnosticDescriptors.ReservedVariantName, location,
@@ -460,6 +462,6 @@ static class UnionParser
 
     static FieldModel CreateFieldModel(string name, ITypeSymbol type, Accessibility access) =>
         new(name, type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            access.ToAccessibilityString(), type.IsUnmanagedType,
+            access.ToAccessibilityString(), type.IsValueType, type.IsUnmanagedType,
             TypeClassifier.GetSize(type), TypeClassifier.GetAlignment(type));
 }

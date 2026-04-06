@@ -56,6 +56,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Shape() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Shape Circle(int id, double radius)
     {
         var result = default(Shape);
@@ -65,6 +66,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Shape Rectangle(int id, double length, double width)
     {
         var result = default(Shape);
@@ -86,6 +88,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
 
     public double CircleRadius
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
@@ -94,6 +97,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double RectangleLength
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Rectangle) ThrowInvalidCase(nameof(Rectangle));
@@ -102,6 +106,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double RectangleWidth
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Rectangle) ThrowInvalidCase(nameof(Rectangle));
@@ -158,7 +163,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     public bool Equals(Shape other)
     {
         if (_tag != other._tag) return false;
-        if (!global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)) return false;
+        if (!(Id == other.Id)) return false;
         return _tag switch
         {
             Tags.Circle => global::System.Collections.Generic.EqualityComparer<double>.Default.Equals(_circle_Radius, other._circle_Radius),

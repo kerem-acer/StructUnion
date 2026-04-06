@@ -24,6 +24,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Result() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Result<TOk, TError> Ok(TOk value)
     {
         var result = default(Result<TOk, TError>);
@@ -32,6 +33,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Result<TOk, TError> Error(TError error)
     {
         var result = default(Result<TOk, TError>);
@@ -51,6 +53,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
 
     public TOk OkValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Ok) ThrowInvalidCase(nameof(Ok));
@@ -59,6 +62,7 @@ public readonly partial struct Result<TOk, TError> : global::System.IEquatable<R
     }
     public TError ErrorError
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));

@@ -19,7 +19,7 @@ public class UnionModelTests
             (typeParams ?? []).ToImmutableArray().ToEquatableArray(),
             ImmutableArray.Create(
                 new VariantModel("Circle",
-                    ImmutableArray.Create(new FieldModel("radius", "double", "public", true, 8, 8)).ToEquatableArray(),
+                    ImmutableArray.Create(new FieldModel("radius", "double", "public", true, true, 8, 8)).ToEquatableArray(),
                     1)).ToEquatableArray(),
             (commonFields ?? []).ToImmutableArray().ToEquatableArray(),
             LayoutStrategy.Explicit, true, 8, 8, 16, 8, GenerationMode.PartialStruct, "Tag", false);
@@ -34,7 +34,7 @@ public class UnionModelTests
     [Test]
     public async Task HasCommonFields_NonEmpty_ReturnsTrue()
     {
-        var model = MakeModel(commonFields: [new("id", "int", "public", true, 4, 4)]);
+        var model = MakeModel(commonFields: [new("id", "int", "public", true, true, 4, 4)]);
         await Assert.That(model.HasCommonFields).IsTrue();
     }
 
@@ -111,33 +111,4 @@ public class UnionModelTests
         await Assert.That(model.TypeNameWithParameters).IsEqualTo("Result<TOk, TError>");
     }
 
-    [Test]
-    public async Task FullyQualifiedTypeName_GlobalNamespace()
-    {
-        var model = MakeModel(ns: "");
-        await Assert.That(model.FullyQualifiedTypeName).IsEqualTo("global::Shape");
-    }
-
-    [Test]
-    public async Task FullyQualifiedTypeName_WithNamespace()
-    {
-        var model = MakeModel(ns: "MyApp");
-        await Assert.That(model.FullyQualifiedTypeName).IsEqualTo("global::MyApp.Shape");
-    }
-
-    [Test]
-    public async Task FullyQualifiedTypeName_WithNamespaceAndGenerics()
-    {
-        var tp = new TypeParameterModel("T", ImmutableArray<string>.Empty.ToEquatableArray());
-        var model = MakeModel(ns: "MyApp", name: "Option", typeParams: [tp]);
-        await Assert.That(model.FullyQualifiedTypeName).IsEqualTo("global::MyApp.Option<T>");
-    }
-
-    [Test]
-    public async Task FullyQualifiedTypeName_WithContainingTypes()
-    {
-        var model = MakeModel(ns: "MyApp", containingTypes: ["partial class Outer"]);
-        await Assert.That(model.FullyQualifiedTypeName)
-            .IsEqualTo("global::MyApp.partial class Outer.Shape");
-    }
 }

@@ -39,4 +39,10 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="Polyfill" PrivateAssets="all" />
   </ItemGroup>
+
+  <!-- Generated code uses System.HashCode and Unsafe.AsRef which are not built into .NET Framework -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Bcl.HashCode" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
 </Project>

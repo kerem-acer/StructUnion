@@ -83,7 +83,7 @@ public class LayoutCalculatorTests
     [Test]
     public async Task ComputeZoneOffsets_WithCommonGuid()
     {
-        var common = new FieldModel[] { new("Id", "System.Guid", "public", true, 16, 4) };
+        var common = new FieldModel[] { new("Id", "System.Guid", "public", true, true, 16, 4) };
         var variants = MakeVariants(
             ("Text", MakeFields(("s", "string", false, 8, 8))));
 
@@ -97,7 +97,7 @@ public class LayoutCalculatorTests
     [Test]
     public async Task ComputeCommonFieldOffset_SingleInt()
     {
-        var common = new FieldModel[] { new("x", "int", "public", true, 4, 4) };
+        var common = new FieldModel[] { new("x", "int", "public", true, true, 4, 4) };
         var offset = LayoutCalculator.ComputeCommonFieldOffset(common, 0);
 
         await Assert.That(offset).IsEqualTo(4); // Align(1, 4)
@@ -108,8 +108,8 @@ public class LayoutCalculatorTests
     {
         var common = new FieldModel[]
         {
-            new("a", "int", "public", true, 4, 4),
-            new("b", "byte", "public", true, 1, 1)
+            new("a", "int", "public", true, true, 4, 4),
+            new("b", "byte", "public", true, true, 1, 1)
         };
 
         var offset0 = LayoutCalculator.ComputeCommonFieldOffset(common, 0);
@@ -159,14 +159,14 @@ public class LayoutCalculatorTests
     [Test]
     public async Task IsRefField_Unmanaged_ReturnsFalse()
     {
-        var field = new FieldModel("x", "int", "public", true, 4, 4);
+        var field = new FieldModel("x", "int", "public", true, true, 4, 4);
         await Assert.That(LayoutCalculator.IsRefField(field)).IsFalse();
     }
 
     [Test]
     public async Task IsRefField_RefType_ReturnsTrue()
     {
-        var field = new FieldModel("s", "string", "public", false, 8, 8);
+        var field = new FieldModel("s", "string", "public", false, false, 8, 8);
         await Assert.That(LayoutCalculator.IsRefField(field)).IsTrue();
     }
 
@@ -220,9 +220,9 @@ public class LayoutCalculatorTests
     {
         var common = new FieldModel[]
         {
-            new("a", "byte", "public", true, 1, 1),
-            new("b", "int", "public", true, 4, 4),
-            new("c", "byte", "public", true, 1, 1)
+            new("a", "byte", "public", true, true, 1, 1),
+            new("b", "int", "public", true, true, 4, 4),
+            new("c", "byte", "public", true, true, 1, 1)
         };
 
         await Assert.That(LayoutCalculator.ComputeCommonFieldOffset(common, 0)).IsEqualTo(1);   // right after tag
@@ -270,9 +270,23 @@ public class LayoutCalculatorTests
     }
 
     [Test]
+    public async Task DetermineStrategy_ManagedValueType_ReturnsAuto()
+    {
+        // A managed value type (value type containing references, e.g. ValueTuple<string, int>)
+        // cannot participate in explicit overlapping layout.
+        var managedStructField = new FieldModel("t", "ValueTuple<string, int>", "public",
+            IsValueType: true, IsUnmanaged: false, Size: 16, Alignment: 8);
+        var variants = ImmutableArray.Create(
+            new VariantModel("A", ImmutableArray.Create(managedStructField).ToEquatableArray(), 1));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
+    }
+
+    [Test]
     public async Task DetermineStrategy_UnknownCommonFieldSize_ReturnsAuto()
     {
-        var common = new FieldModel[] { new("id", "T", "public", true, -1, -1) };
+        var common = new FieldModel[] { new("id", "T", "public", true, true, -1, -1) };
         var variants = MakeVariants(
             ("A", MakeFields(("x", "int", true, 4, 4))));
 
@@ -288,5 +302,5 @@ public class LayoutCalculatorTests
 
     static ImmutableArray<FieldModel> MakeFields(
         params (string Name, string Type, bool IsUnmanaged, int Size, int Align)[] fields) =>
-        [.. fields.Select(f => new FieldModel(f.Name, f.Type, "public", f.IsUnmanaged, f.Size, f.Align))];
+        [.. fields.Select(f => new FieldModel(f.Name, f.Type, "public", f.IsUnmanaged, f.IsUnmanaged, f.Size, f.Align))];
 }

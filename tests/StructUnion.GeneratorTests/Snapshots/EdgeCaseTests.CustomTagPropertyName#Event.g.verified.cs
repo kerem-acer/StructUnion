@@ -52,6 +52,7 @@ public readonly partial struct Event : global::System.IEquatable<Event>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Event() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Event Tag(string value)
     {
         var result = default(Event);
@@ -60,6 +61,7 @@ public readonly partial struct Event : global::System.IEquatable<Event>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Event Click(int x, int y)
     {
         var result = default(Event);
@@ -80,6 +82,7 @@ public readonly partial struct Event : global::System.IEquatable<Event>
 
     public string TagValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Tag) ThrowInvalidCase(nameof(Tag));
@@ -88,6 +91,7 @@ public readonly partial struct Event : global::System.IEquatable<Event>
     }
     public int ClickX
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Click) ThrowInvalidCase(nameof(Click));
@@ -96,6 +100,7 @@ public readonly partial struct Event : global::System.IEquatable<Event>
     }
     public int ClickY
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Click) ThrowInvalidCase(nameof(Click));
@@ -157,7 +162,7 @@ public readonly partial struct Event : global::System.IEquatable<Event>
         return _tag switch
         {
             Tags.Tag => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_tag_value, other._tag_value),
-            Tags.Click => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_click_x, other._click_x) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_click_y, other._click_y),
+            Tags.Click => _click_x == other._click_x && _click_y == other._click_y,
             _ => true
         };
     }

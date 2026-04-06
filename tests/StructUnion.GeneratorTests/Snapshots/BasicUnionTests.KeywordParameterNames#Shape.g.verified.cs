@@ -45,6 +45,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Shape() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Shape Triangle(double @base, double height)
     {
         var result = default(Shape);
@@ -64,6 +65,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
 
     public double TriangleBase
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Triangle) ThrowInvalidCase(nameof(Triangle));
@@ -72,6 +74,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double TriangleHeight
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Triangle) ThrowInvalidCase(nameof(Triangle));

@@ -67,18 +67,4 @@ readonly record struct UnionModel(
             return $"{Name}<{string.Join(", ", TypeParameters.Select(tp => tp.Name))}>";
         }
     }
-
-    public string FullyQualifiedTypeName
-    {
-        get
-        {
-            var prefix = Namespace.Length > 0 ? $"global::{Namespace}." : "global::";
-            foreach (var ct in ContainingTypes)
-            {
-                prefix += $"{ct}.";
-            }
-
-            return $"{prefix}{TypeNameWithParameters}";
-        }
-    }
 }

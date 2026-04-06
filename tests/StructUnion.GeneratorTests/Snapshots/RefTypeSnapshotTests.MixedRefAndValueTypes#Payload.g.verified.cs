@@ -59,6 +59,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Payload() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Payload Text(string value)
     {
         var result = default(Payload);
@@ -67,6 +68,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Payload Number(int value)
     {
         var result = default(Payload);
@@ -75,6 +77,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Payload Both(string name, int age)
     {
         var result = default(Payload);
@@ -96,6 +99,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
 
     public string TextValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Text) ThrowInvalidCase(nameof(Text));
@@ -104,6 +108,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     }
     public int NumberValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Number) ThrowInvalidCase(nameof(Number));
@@ -112,6 +117,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     }
     public string BothName
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Both) ThrowInvalidCase(nameof(Both));
@@ -120,6 +126,7 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
     }
     public int BothAge
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Both) ThrowInvalidCase(nameof(Both));
@@ -196,8 +203,8 @@ public readonly partial struct Payload : global::System.IEquatable<Payload>
         return _tag switch
         {
             Tags.Text => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_text_Value, other._text_Value),
-            Tags.Number => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_number_Value, other._number_Value),
-            Tags.Both => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_both_Name, other._both_Name) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_both_Age, other._both_Age),
+            Tags.Number => _number_Value == other._number_Value,
+            Tags.Both => global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_both_Name, other._both_Name) && _both_Age == other._both_Age,
             _ => true
         };
     }

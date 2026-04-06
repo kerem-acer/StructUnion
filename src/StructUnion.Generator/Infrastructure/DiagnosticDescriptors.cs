@@ -89,7 +89,7 @@ static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor ReservedVariantName = new(
         id: "SU0011",
         title: "Variant name is reserved",
-        messageFormat: "The variant name '{0}' on '{1}' is reserved and would conflict with the generated Tags enum; rename the variant",
+        messageFormat: "The variant name '{0}' on '{1}' is reserved and would conflict with generated members; rename the variant",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

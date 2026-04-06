@@ -49,6 +49,7 @@ namespace MyApp.Models
         [global::System.Obsolete("Use factory methods instead.", true)]
         public Result() { }
 
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static partial Result Ok(int value)
         {
             var result = default(Result);
@@ -57,6 +58,7 @@ namespace MyApp.Models
             return result;
         }
 
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static partial Result Error(int code)
         {
             var result = default(Result);
@@ -76,6 +78,7 @@ namespace MyApp.Models
 
         public int OkValue
         {
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_tag != Tags.Ok) ThrowInvalidCase(nameof(Ok));
@@ -84,6 +87,7 @@ namespace MyApp.Models
         }
         public int ErrorCode
         {
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
@@ -140,8 +144,8 @@ namespace MyApp.Models
             if (_tag != other._tag) return false;
             return _tag switch
             {
-                Tags.Ok => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_ok_value, other._ok_value),
-                Tags.Error => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_error_code, other._error_code),
+                Tags.Ok => _ok_value == other._ok_value,
+                Tags.Error => _error_code == other._error_code,
                 _ => true
             };
         }

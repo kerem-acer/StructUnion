@@ -61,6 +61,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Mixed() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Mixed IntCase(int value)
     {
         var result = default(Mixed);
@@ -69,6 +70,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Mixed LongCase(long value)
     {
         var result = default(Mixed);
@@ -77,6 +79,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Mixed ByteCase(byte value)
     {
         var result = default(Mixed);
@@ -85,6 +88,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Mixed FloatCase(float value)
     {
         var result = default(Mixed);
@@ -106,6 +110,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
 
     public int IntCaseValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.IntCase) ThrowInvalidCase(nameof(IntCase));
@@ -114,6 +119,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     }
     public long LongCaseValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.LongCase) ThrowInvalidCase(nameof(LongCase));
@@ -122,6 +128,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     }
     public byte ByteCaseValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.ByteCase) ThrowInvalidCase(nameof(ByteCase));
@@ -130,6 +137,7 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
     }
     public float FloatCaseValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.FloatCase) ThrowInvalidCase(nameof(FloatCase));
@@ -219,9 +227,9 @@ public readonly partial struct Mixed : global::System.IEquatable<Mixed>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.IntCase => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_intcase_value, other._intcase_value),
-            Tags.LongCase => global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(_longcase_value, other._longcase_value),
-            Tags.ByteCase => global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(_bytecase_value, other._bytecase_value),
+            Tags.IntCase => _intcase_value == other._intcase_value,
+            Tags.LongCase => _longcase_value == other._longcase_value,
+            Tags.ByteCase => _bytecase_value == other._bytecase_value,
             Tags.FloatCase => global::System.Collections.Generic.EqualityComparer<float>.Default.Equals(_floatcase_value, other._floatcase_value),
             _ => true
         };

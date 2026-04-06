@@ -87,6 +87,7 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public DrawCmd() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial DrawCmd MoveTo(double x, double y)
     {
         var result = default(DrawCmd);
@@ -96,6 +97,7 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial DrawCmd LineTo(double x, double y)
     {
         var result = default(DrawCmd);
@@ -105,6 +107,7 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial DrawCmd Close()
     {
         var result = default(DrawCmd);
@@ -124,6 +127,7 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
 
     public Cases.MoveTo AsMoveTo
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.MoveTo) ThrowInvalidCase(nameof(MoveTo));
@@ -132,6 +136,7 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
     }
     public Cases.LineTo AsLineTo
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.LineTo) ThrowInvalidCase(nameof(LineTo));

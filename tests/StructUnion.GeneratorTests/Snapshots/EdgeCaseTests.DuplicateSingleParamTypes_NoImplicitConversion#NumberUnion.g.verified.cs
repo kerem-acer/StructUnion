@@ -47,6 +47,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     [global::System.Obsolete("Use factory methods instead.", true)]
     public NumberUnion() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial NumberUnion Celsius(double value)
     {
         var result = default(NumberUnion);
@@ -55,6 +56,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial NumberUnion Fahrenheit(double value)
     {
         var result = default(NumberUnion);
@@ -74,6 +76,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
 
     public double CelsiusValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Celsius) ThrowInvalidCase(nameof(Celsius));
@@ -82,6 +85,7 @@ public readonly partial struct NumberUnion : global::System.IEquatable<NumberUni
     }
     public double FahrenheitValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Fahrenheit) ThrowInvalidCase(nameof(Fahrenheit));

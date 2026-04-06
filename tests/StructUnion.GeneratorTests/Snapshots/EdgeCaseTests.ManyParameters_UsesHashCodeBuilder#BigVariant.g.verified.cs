@@ -82,6 +82,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     [global::System.Obsolete("Use factory methods instead.", true)]
     public BigVariant() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial BigVariant Many(int a, int b, int c, int d, int e, int f, int g, int h)
     {
         var result = default(BigVariant);
@@ -97,6 +98,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial BigVariant Small(int x)
     {
         var result = default(BigVariant);
@@ -116,6 +118,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
 
     public int ManyA
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -124,6 +127,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyB
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -132,6 +136,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyC
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -140,6 +145,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyD
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -148,6 +154,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyE
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -156,6 +163,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyF
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -164,6 +172,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyG
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -172,6 +181,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int ManyH
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Many) ThrowInvalidCase(nameof(Many));
@@ -180,6 +190,7 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
     }
     public int SmallX
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Small) ThrowInvalidCase(nameof(Small));
@@ -252,8 +263,8 @@ public readonly partial struct BigVariant : global::System.IEquatable<BigVariant
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Many => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_a, other._many_a) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_b, other._many_b) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_c, other._many_c) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_d, other._many_d) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_e, other._many_e) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_f, other._many_f) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_g, other._many_g) && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_many_h, other._many_h),
-            Tags.Small => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_small_x, other._small_x),
+            Tags.Many => _many_a == other._many_a && _many_b == other._many_b && _many_c == other._many_c && _many_d == other._many_d && _many_e == other._many_e && _many_f == other._many_f && _many_g == other._many_g && _many_h == other._many_h,
+            Tags.Small => _small_x == other._small_x,
             _ => true
         };
     }

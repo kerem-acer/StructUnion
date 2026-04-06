@@ -8,6 +8,7 @@ readonly record struct FieldModel(
     string Name,
     string TypeFullyQualified,
     string Accessibility,
+    bool IsValueType,
     bool IsUnmanaged,
     int Size,
     int Alignment);

@@ -26,6 +26,7 @@ partial class Outer<T>
         [global::System.Obsolete("Use factory methods instead.", true)]
         public Inner() { }
 
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static partial Inner A(T value)
         {
             var result = default(Inner);
@@ -34,6 +35,7 @@ partial class Outer<T>
             return result;
         }
 
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static partial Inner B(int count)
         {
             var result = default(Inner);
@@ -53,6 +55,7 @@ partial class Outer<T>
 
         public T AValue
         {
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_tag != Tags.A) ThrowInvalidCase(nameof(A));
@@ -61,6 +64,7 @@ partial class Outer<T>
         }
         public int BCount
         {
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_tag != Tags.B) ThrowInvalidCase(nameof(B));
@@ -121,7 +125,7 @@ partial class Outer<T>
             return _tag switch
             {
                 Tags.A => global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(_a_value, other._a_value),
-                Tags.B => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_b_count, other._b_count),
+                Tags.B => _b_count == other._b_count,
                 _ => true
             };
         }

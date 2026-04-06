@@ -693,6 +693,48 @@ public class DiagnosticTests
         await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0011");
     }
 
+    [Test]
+    public async Task VariantNamedCases_WithNestedAccessors_ReportsSU0011()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion(NestedAccessors = true)]
+            public readonly partial struct MyUnion
+            {
+                public static partial MyUnion Cases(int value);
+                public static partial MyUnion Other(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0011");
+    }
+
+    [Test]
+    public async Task VariantNamedCases_WithoutNestedAccessors_DoesNotReportSU0011()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct MyUnion
+            {
+                public static partial MyUnion Cases(int value);
+                public static partial MyUnion Other(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
+        await Assert.That(result.Diagnostics).DoesNotContain(d => d.Id == "SU0011");
+    }
+
     // ── Boundary tests ──
 
     [Test]

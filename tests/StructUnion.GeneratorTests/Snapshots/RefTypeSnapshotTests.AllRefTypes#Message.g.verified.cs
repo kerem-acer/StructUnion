@@ -54,6 +54,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Message() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Message Text(string value)
     {
         var result = default(Message);
@@ -62,6 +63,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Message Data(int[] items)
     {
         var result = default(Message);
@@ -70,6 +72,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Message Error(global::System.Exception ex)
     {
         var result = default(Message);
@@ -90,6 +93,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
 
     public string TextValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Text) ThrowInvalidCase(nameof(Text));
@@ -98,6 +102,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     }
     public int[] DataItems
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Data) ThrowInvalidCase(nameof(Data));
@@ -106,6 +111,7 @@ public readonly partial struct Message : global::System.IEquatable<Message>
     }
     public global::System.Exception ErrorEx
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));

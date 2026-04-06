@@ -49,6 +49,7 @@ partial class Outer
         [global::System.Obsolete("Use factory methods instead.", true)]
         public Inner() { }
 
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static partial Inner A(int x)
         {
             var result = default(Inner);
@@ -57,6 +58,7 @@ partial class Outer
             return result;
         }
 
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static partial Inner B(int y)
         {
             var result = default(Inner);
@@ -76,6 +78,7 @@ partial class Outer
 
         public int AX
         {
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_tag != Tags.A) ThrowInvalidCase(nameof(A));
@@ -84,6 +87,7 @@ partial class Outer
         }
         public int BY
         {
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_tag != Tags.B) ThrowInvalidCase(nameof(B));
@@ -140,8 +144,8 @@ partial class Outer
             if (_tag != other._tag) return false;
             return _tag switch
             {
-                Tags.A => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_a_x, other._a_x),
-                Tags.B => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_b_y, other._b_y),
+                Tags.A => _a_x == other._a_x,
+                Tags.B => _b_y == other._b_y,
                 _ => true
             };
         }

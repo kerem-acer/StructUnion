@@ -64,6 +64,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Shape() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Shape Circle(double radius)
     {
         var result = default(Shape);
@@ -72,6 +73,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Shape Rectangle(double length, double width)
     {
         var result = default(Shape);
@@ -81,6 +83,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Shape Triangle(double @base, double height)
     {
         var result = default(Shape);
@@ -102,6 +105,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
 
     public double CircleRadius
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
@@ -110,6 +114,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double RectangleLength
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Rectangle) ThrowInvalidCase(nameof(Rectangle));
@@ -118,6 +123,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double RectangleWidth
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Rectangle) ThrowInvalidCase(nameof(Rectangle));
@@ -126,6 +132,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double TriangleBase
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Triangle) ThrowInvalidCase(nameof(Triangle));
@@ -134,6 +141,7 @@ public readonly partial struct Shape : global::System.IEquatable<Shape>
     }
     public double TriangleHeight
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Triangle) ThrowInvalidCase(nameof(Triangle));

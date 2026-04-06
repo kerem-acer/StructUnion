@@ -5,6 +5,8 @@ namespace StructUnion.Generator.Emitting;
 
 static class PropertyEmitter
 {
+    const string Inline = "[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]";
+
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
         var tag = model.TagField;
@@ -61,6 +63,7 @@ static class PropertyEmitter
                 sb.AppendLine($"public {param.TypeFullyQualified} {propName}");
                 using (sb.Block())
                 {
+                    sb.AppendLine(Inline);
                     sb.AppendLine("get");
                     using (sb.Block())
                     {
@@ -89,6 +92,7 @@ static class PropertyEmitter
             sb.AppendLine($"public Cases.{variant.Name} As{variant.Name}");
             using (sb.Block())
             {
+                sb.AppendLine(Inline);
                 sb.AppendLine("get");
                 using (sb.Block())
                 {

@@ -47,6 +47,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public MyShape() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static MyShape Circle(double radius)
     {
         var result = default(MyShape);
@@ -55,6 +56,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static MyShape Square(double side)
     {
         var result = default(MyShape);
@@ -74,6 +76,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
 
     public double CircleRadius
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
@@ -82,6 +85,7 @@ public readonly partial struct MyShape : global::System.IEquatable<MyShape>
     }
     public double SquareSide
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Square) ThrowInvalidCase(nameof(Square));

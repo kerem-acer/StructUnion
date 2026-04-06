@@ -42,6 +42,7 @@ public readonly partial struct Option : global::System.IEquatable<Option>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Option() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Option Some(int value)
     {
         var result = default(Option);
@@ -50,6 +51,7 @@ public readonly partial struct Option : global::System.IEquatable<Option>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Option None()
     {
         var result = default(Option);
@@ -68,6 +70,7 @@ public readonly partial struct Option : global::System.IEquatable<Option>
 
     public int SomeValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Some) ThrowInvalidCase(nameof(Some));
@@ -116,7 +119,7 @@ public readonly partial struct Option : global::System.IEquatable<Option>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Some => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_some_value, other._some_value),
+            Tags.Some => _some_value == other._some_value,
             Tags.None => true,
             _ => true
         };

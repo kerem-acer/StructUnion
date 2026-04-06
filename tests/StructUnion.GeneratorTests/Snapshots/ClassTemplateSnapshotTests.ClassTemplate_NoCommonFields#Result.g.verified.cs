@@ -52,6 +52,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Result() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Result Ok(int value)
     {
         var result = default(Result);
@@ -60,6 +61,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static Result Error(int code, string message)
     {
         var result = default(Result);
@@ -80,6 +82,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
 
     public int OkValue
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Ok) ThrowInvalidCase(nameof(Ok));
@@ -88,6 +91,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     }
     public int ErrorCode
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
@@ -96,6 +100,7 @@ public readonly partial struct Result : global::System.IEquatable<Result>
     }
     public string ErrorMessage
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Error) ThrowInvalidCase(nameof(Error));
@@ -156,8 +161,8 @@ public readonly partial struct Result : global::System.IEquatable<Result>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Ok => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_ok_Value, other._ok_Value),
-            Tags.Error => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_error_Code, other._error_Code) && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_error_Message, other._error_Message),
+            Tags.Ok => _ok_Value == other._ok_Value,
+            Tags.Error => _error_Code == other._error_Code && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(_error_Message, other._error_Message),
             _ => true
         };
     }

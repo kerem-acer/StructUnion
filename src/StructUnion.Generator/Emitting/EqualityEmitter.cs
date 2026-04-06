@@ -5,6 +5,23 @@ namespace StructUnion.Generator.Emitting;
 
 static class EqualityEmitter
 {
+    /// <summary>
+    /// Types where <c>==</c> is equivalent to <c>EqualityComparer&lt;T&gt;.Default.Equals()</c>.
+    /// Excludes float/double/decimal where NaN semantics differ.
+    /// Uses keyword aliases because <see cref="SymbolDisplayFormat.FullyQualifiedFormat"/>
+    /// with UseSpecialTypes produces "int" not "global::System.Int32".
+    /// </summary>
+    static readonly HashSet<string> DirectEqualityTypes =
+    [
+        "bool", "byte", "sbyte", "short", "ushort", "char",
+        "int", "uint", "long", "ulong", "nint", "nuint"
+    ];
+
+    static string EmitFieldComparison(string fieldExpr, string otherFieldExpr, string typeFullyQualified) =>
+        DirectEqualityTypes.Contains(typeFullyQualified)
+            ? $"{fieldExpr} == other.{otherFieldExpr}"
+            : $"global::System.Collections.Generic.EqualityComparer<{typeFullyQualified}>.Default.Equals({fieldExpr}, other.{otherFieldExpr})";
+
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
         var typeName = model.TypeNameWithParameters;
@@ -19,7 +36,8 @@ static class EqualityEmitter
             // Common fields
             foreach (var field in model.CommonFields)
             {
-                sb.AppendLine($"if (!global::System.Collections.Generic.EqualityComparer<{field.TypeFullyQualified}>.Default.Equals({field.Name}, other.{field.Name})) return false;");
+                var cmp = EmitFieldComparison(field.Name, field.Name, field.TypeFullyQualified);
+                sb.AppendLine($"if (!({cmp})) return false;");
             }
 
             sb.AppendLine($"return {tag} switch");
@@ -35,7 +53,7 @@ static class EqualityEmitter
                 var comparisons = variant.Parameters.Select(p =>
                 {
                     var fn = model.VariantField(variant.Name, p.Name);
-                    return $"global::System.Collections.Generic.EqualityComparer<{p.TypeFullyQualified}>.Default.Equals({fn}, other.{fn})";
+                    return EmitFieldComparison(fn, fn, p.TypeFullyQualified);
                 });
                 sb.AppendLine($"Tags.{variant.Name} => {string.Join(" && ", comparisons)},");
             }

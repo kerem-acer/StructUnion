@@ -40,6 +40,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
     [global::System.Obsolete("Use factory methods instead.", true)]
     public Wrapper() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial Wrapper Value(int x)
     {
         var result = default(Wrapper);
@@ -58,6 +59,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
 
     public int ValueX
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Value) ThrowInvalidCase(nameof(Value));
@@ -102,7 +104,7 @@ public readonly partial struct Wrapper : global::System.IEquatable<Wrapper>
         if (_tag != other._tag) return false;
         return _tag switch
         {
-            Tags.Value => global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(_value_x, other._value_x),
+            Tags.Value => _value_x == other._value_x,
             _ => true
         };
     }

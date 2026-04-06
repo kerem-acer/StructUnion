@@ -52,6 +52,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     [global::System.Obsolete("Use factory methods instead.", true)]
     public InternalShape() { }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial InternalShape Circle(double radius)
     {
         var result = default(InternalShape);
@@ -60,6 +61,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
         return result;
     }
 
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static partial InternalShape Rect(double w, double h)
     {
         var result = default(InternalShape);
@@ -80,6 +82,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
 
     public double CircleRadius
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Circle) ThrowInvalidCase(nameof(Circle));
@@ -88,6 +91,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     }
     public double RectW
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Rect) ThrowInvalidCase(nameof(Rect));
@@ -96,6 +100,7 @@ internal readonly partial struct InternalShape : global::System.IEquatable<Inter
     }
     public double RectH
     {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         get
         {
             if (_tag != Tags.Rect) ThrowInvalidCase(nameof(Rect));
