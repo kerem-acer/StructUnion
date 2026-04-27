@@ -14,7 +14,10 @@ sealed class SourceBuilder
     {
         var result = new string[count];
         for (var i = 0; i < count; i++)
+        {
             result[i] = new string(' ', i * 4);
+        }
+
         return result;
     }
 
@@ -100,12 +103,12 @@ sealed class SourceBuilder
 
     internal ref struct BlockScope(SourceBuilder builder)
     {
-        public void Dispose() => builder.CloseBrace();
+        public readonly void Dispose() => builder.CloseBrace();
     }
 
     internal ref struct IndentScope(SourceBuilder builder)
     {
-        public void Dispose()
+        public readonly void Dispose()
         {
             Debug.Assert(builder._indent > 0, "IndentScope.Dispose called with zero indent");
             builder._indent--;
