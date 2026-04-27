@@ -83,7 +83,7 @@ static class RoslynExtensions
         return result.ToImmutable().ToEquatableArray();
     }
 
-    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix)
+    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose)
         GetStructUnionAttributeProps(this GeneratorAttributeSyntaxContext ctx)
     {
         bool? enableImplicit = null;
@@ -91,6 +91,7 @@ static class RoslynExtensions
         string? tagPropertyName = null;
         bool? nestedAccessors = null;
         string? suffix = null;
+        bool? generateDispose = null;
 
         foreach (var attr in ctx.Attributes)
         {
@@ -115,11 +116,14 @@ static class RoslynExtensions
                     case nameof(StructUnionAttribute.TemplateSuffix) when named.Value.Value is string s:
                         suffix = s;
                         break;
+                    case nameof(StructUnionAttribute.GenerateDispose) when named.Value.Value is bool dispose:
+                        generateDispose = dispose;
+                        break;
                 }
             }
         }
 
-        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix);
+        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose);
     }
 
     /// <summary>
@@ -134,6 +138,7 @@ static class RoslynExtensions
         string? templateSuffix = null;
         bool? enableImplicit = null;
         bool? nestedAccessors = null;
+        bool? generateDispose = null;
 
         foreach (var attr in compilation.Assembly.GetAttributes())
         {
@@ -155,11 +160,62 @@ static class RoslynExtensions
                         case nameof(StructUnionOptionsAttribute.NestedAccessors) when named.Value.Value is bool nested:
                             nestedAccessors = nested;
                             break;
+                        case nameof(StructUnionOptionsAttribute.GenerateDispose) when named.Value.Value is bool dispose:
+                            generateDispose = dispose;
+                            break;
                     }
                 }
             }
         }
 
-        return new AssemblyOptions(tagPropertyName, templateSuffix, enableImplicit, nestedAccessors);
+        return new AssemblyOptions(tagPropertyName, templateSuffix, enableImplicit, nestedAccessors, generateDispose);
+    }
+
+    /// <summary>
+    /// Determines whether the type implements (or is) <see cref="IDisposable"/> and/or
+    /// <c>IAsyncDisposable</c>. For type parameters, only constraints are inspected — an
+    /// unconstrained <c>T</c> is reported as non-disposable. Matches the design choice to handle
+    /// only statically-known disposables (no runtime <c>is IDisposable</c> probing).
+    /// </summary>
+    public static (bool Sync, bool Async) ClassifyDisposable(this ITypeSymbol type)
+    {
+        if (type is null)
+        {
+            return (false, false);
+        }
+
+        const string syncFqn = "global::System.IDisposable";
+        const string asyncFqn = "global::System.IAsyncDisposable";
+
+        return (IsOrImplements(type, syncFqn), IsOrImplements(type, asyncFqn));
+
+        static bool IsOrImplements(ITypeSymbol type, string interfaceFqn)
+        {
+            if (type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == interfaceFqn)
+            {
+                return true;
+            }
+
+            foreach (var iface in type.AllInterfaces)
+            {
+                if (iface.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == interfaceFqn)
+                {
+                    return true;
+                }
+            }
+
+            if (type is ITypeParameterSymbol tp)
+            {
+                foreach (var c in tp.ConstraintTypes)
+                {
+                    if (IsOrImplements(c, interfaceFqn))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     }
 }

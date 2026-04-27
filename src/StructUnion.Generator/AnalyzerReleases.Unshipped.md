@@ -14,3 +14,4 @@ SU0009 | StructUnion | Error | Tag property name conflicts with generated member
 SU0010 | StructUnion | Error | GeneratedName and TemplateSuffix cannot both be set
 SU0011 | StructUnion | Error | Variant name is reserved
 SU0012 | StructUnion | Error | Invalid C# identifier
+SU0013 | StructUnion | Warning | Variant field is disposable but GenerateDispose is not enabled

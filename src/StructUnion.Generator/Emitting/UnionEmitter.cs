@@ -46,7 +46,21 @@ static class UnionEmitter
             typeParams = $"<{string.Join(", ", model.TypeParameters.Select(tp => tp.Name))}>";
         }
 
-        sb.AppendLine($"{model.Accessibility} readonly partial struct {model.Name}{typeParams} : global::System.IEquatable<{model.TypeNameWithParameters}>");
+        var interfaces = $"global::System.IEquatable<{model.TypeNameWithParameters}>";
+        if (model.GenerateDispose)
+        {
+            if (model.HasAnySyncDisposable)
+            {
+                interfaces += ", global::System.IDisposable";
+            }
+
+            if (model.HasAnyAsyncDisposable)
+            {
+                interfaces += ", global::System.IAsyncDisposable";
+            }
+        }
+
+        sb.AppendLine($"{model.Accessibility} readonly partial struct {model.Name}{typeParams} : {interfaces}");
 
         // Type parameter constraints
         foreach (var tp in model.TypeParameters)
@@ -89,6 +103,9 @@ static class UnionEmitter
         // ToString
         ToStringEmitter.Emit(sb, model);
         sb.AppendLine();
+
+        // Disposable (opt-in)
+        DisposableEmitter.Emit(sb, model);
 
         // Error helpers
         sb.AppendLine("[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]");

@@ -60,6 +60,7 @@ static class UnionParser
         var tagPropertyName = data.PerTypeTag ?? asm.TagPropertyName ?? Defaults.TagPropertyName;
         var nestedAccessors = data.PerTypeNested ?? asm.NestedAccessors ?? Defaults.NestedAccessors;
         var effectiveSuffix = data.PerTypeSuffix ?? asm.TemplateSuffix ?? Defaults.TemplateSuffix;
+        var generateDispose = data.PerTypeGenerateDispose ?? asm.GenerateDispose ?? false;
 
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = data.Location;
@@ -96,9 +97,10 @@ static class UnionParser
             return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
         }
 
-        var model = BuildModel(data, structName, enableImplicit, tagPropertyName, nestedAccessors);
+        var model = BuildModel(data, structName, enableImplicit, tagPropertyName, nestedAccessors, generateDispose);
 
         CheckLargeStruct(model, location, diagnostics);
+        ReportDisposableWithoutOptIn(model, location, diagnostics);
 
         return new ParseResult(model, diagnostics.ToImmutable().ToEquatableArray());
     }
@@ -109,7 +111,7 @@ static class UnionParser
         GeneratorAttributeSyntaxContext ctx, INamedTypeSymbol symbol,
         StructDeclarationSyntax syntax, CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = syntax.Identifier.GetLocation();
 
@@ -193,7 +195,7 @@ static class UnionParser
             ImmutableArray<FieldModel>.Empty.ToEquatableArray(),
             GenerationMode.PartialStruct,
             "",
-            perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix,
+            perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose,
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -204,7 +206,7 @@ static class UnionParser
     static TransformResult ExtractTemplate(
         GeneratorAttributeSyntaxContext ctx, INamedTypeSymbol symbol, CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = ctx.TargetNode.GetLocation();
 
@@ -261,7 +263,7 @@ static class UnionParser
             commonFields.ToImmutable().ToEquatableArray(),
             GenerationMode.RecordTemplate,
             templateKeyword,
-            perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix,
+            perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose,
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -271,7 +273,7 @@ static class UnionParser
 
     static UnionModel BuildModel(
         TypeExtract data, string structName, bool enableImplicit,
-        string tagPropertyName, bool nestedAccessors)
+        string tagPropertyName, bool nestedAccessors, bool generateDispose)
     {
         var variants = data.Variants.AsImmutableArray();
         var commonFields = data.CommonFields.AsImmutableArray();
@@ -294,9 +296,32 @@ static class UnionParser
             data.CommonFields,
             layout, enableImplicit, refZoneOffset, valueZoneOffset,
             totalSize, structAlignment, data.Mode,
-            tagPropertyName, nestedAccessors,
+            tagPropertyName, nestedAccessors, generateDispose,
             data.Mode == GenerationMode.RecordTemplate ? data.SymbolName : "",
             data.TemplateTypeKeyword);
+    }
+
+    static void ReportDisposableWithoutOptIn(
+        UnionModel model, DiagnosticLocation location, ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        if (model.GenerateDispose || !model.HasAnyDisposable)
+        {
+            return;
+        }
+
+        foreach (var variant in model.Variants)
+        {
+            foreach (var param in variant.Parameters)
+            {
+                if (param.IsDisposable || param.IsAsyncDisposable)
+                {
+                    diagnostics.Add(DiagnosticInfo.Create(
+                        DiagnosticDescriptors.DisposableFieldWithoutOptIn, location,
+                        variant.Name, param.Name, param.TypeFullyQualified, model.Name));
+                    return; // one per type is enough
+                }
+            }
+        }
     }
 
     // ── Validation helpers ──
@@ -514,6 +539,7 @@ static class UnionParser
     static FieldModel CreateFieldModel(string name, ITypeSymbol type, Accessibility access)
     {
         var (fqn, size, alignment) = TypeClassifier.Classify(type);
-        return new(name, fqn, access.ToAccessibilityString(), type.IsValueType, type.IsUnmanagedType, size, alignment);
+        var (sync, asyncDisp) = type.ClassifyDisposable();
+        return new(name, fqn, access.ToAccessibilityString(), type.IsValueType, type.IsUnmanagedType, size, alignment, sync, asyncDisp);
     }
 }

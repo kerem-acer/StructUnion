@@ -43,4 +43,15 @@ sealed class StructUnionOptionsAttribute : Attribute
     /// Can be overridden per-type via <see cref="StructUnionAttribute.NestedAccessors"/>.
     /// </remarks>
     public bool NestedAccessors { get; set; }
+
+    /// <summary>
+    /// When true, the generated struct implements <see cref="IDisposable"/>
+    /// (and <c>IAsyncDisposable</c> when applicable) and emits per-variant
+    /// <c>Take{Variant}</c> / <c>TryTake{Variant}</c> ownership-transfer helpers.
+    /// </summary>
+    /// <remarks>
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// Can be overridden per-type via <see cref="StructUnionAttribute.GenerateDispose"/>.
+    /// </remarks>
+    public bool GenerateDispose { get; set; }
 }
