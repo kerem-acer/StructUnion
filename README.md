@@ -194,6 +194,8 @@ For each union, the generator produces:
 | `ToString` | `shape.ToString()` | Formats as `"Variant(field1, field2)"` |
 | Implicit conversion | `OptionInt opt = 42;` | For single-parameter variants with unique types |
 | `IsDefault` | `shape.IsDefault` | Returns `true` for `default(Shape)` (tag 0, no variant) |
+| `Dispose` / `DisposeAsync` | `using var r = ...;` | Opt-in via `GenerateDispose = true`; disposes the active variant's resources |
+| `Take*` / `TryTake*` | `Resource.TakeFile(ref r)` | Opt-in ownership-transfer helpers; extract a disposable and zero the union |
 
 ## Configuration
 
@@ -269,6 +271,46 @@ public static class Cases
 }
 ```
 
+### Disposable Support
+
+Set `GenerateDispose = true` to make the union a first-class owner of disposable resources. The generator then:
+
+- Implements `IDisposable` (and `IAsyncDisposable` if any variant field implements it).
+- Emits `Dispose()` / `DisposeAsync()` that switch on the active tag and dispose only that variant's fields. Safe on `default(T)` and on variants without disposables.
+- Emits `Take{Variant}` and `TryTake{Variant}` static helpers (`ref T self`) that extract the variant's payload and reset `self` to `default`, so a subsequent `Dispose()` is a no-op. Use these to transfer ownership out of a union without double-disposing.
+
+```csharp
+[StructUnion(GenerateDispose = true)]
+public readonly partial struct Resource
+{
+    public static partial Resource File(System.IO.FileStream stream);   // owns the stream
+    public static partial Resource Buffer(System.Buffers.IMemoryOwner<byte> owner);
+    public static partial Resource Inline(int value);                   // not disposable
+}
+
+// Disposes the FileStream automatically.
+using var r = Resource.File(File.OpenRead(path));
+
+// No-op for variants without disposables.
+using var inline = Resource.Inline(42);
+
+// Default instances are safe.
+default(Resource).Dispose();
+
+// Ownership transfer: caller now owns the stream; r is left as default.
+var stream = Resource.TakeFile(ref r);
+```
+
+Detection is **statically known only** — concrete types and `where T : IDisposable` constraints are picked up; unconstrained generic parameters are not. If a variant carries a disposable field but `GenerateDispose` is off, the generator reports `SU0013` so the choice is explicit.
+
+For async-only resources, prefer `await using`:
+
+```csharp
+await using var r = Resource.File(asyncDisposable);
+```
+
+Can be set assembly-wide via `[assembly: StructUnionOptions(GenerateDispose = true)]`.
+
 ### Assembly-Level Defaults
 
 Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes override these when set:
@@ -278,7 +320,8 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
     TemplateSuffix = "Template",          // strip "Template" instead of "Record" from template names
     TagPropertyName = "Kind",             // default tag property name for all unions
     EnableImplicitConversions = false,    // disable implicit conversions project-wide
-    NestedAccessors = true)]              // enable nested accessors project-wide
+    NestedAccessors = true,               // enable nested accessors project-wide
+    GenerateDispose = true)]              // generate Dispose/DisposeAsync where applicable
 ```
 
 ## Diagnostics
@@ -297,6 +340,7 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
 | SU0010 | Error | `GeneratedName` and `TemplateSuffix` cannot both be set |
 | SU0011 | Error | Variant name is reserved (conflicts with generated `Tags` enum) |
 | SU0012 | Error | Invalid C# identifier for `GeneratedName` or `TagPropertyName` |
+| SU0013 | Warning | Variant field is disposable but `GenerateDispose` is not enabled |
 
 ## How It Works
 

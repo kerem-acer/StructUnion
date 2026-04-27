@@ -8,4 +8,5 @@ readonly record struct AssemblyOptions(
     string? TagPropertyName,
     string? TemplateSuffix,
     bool? EnableImplicit,
-    bool? NestedAccessors);
+    bool? NestedAccessors,
+    bool? GenerateDispose);

@@ -53,4 +53,17 @@ sealed class StructUnionAttribute : Attribute
     /// Cannot be combined with <see cref="GeneratedName"/>.
     /// </summary>
     public string? TemplateSuffix { get; set; }
+
+    /// <summary>
+    /// When true, the generated struct implements <see cref="IDisposable"/> (and
+    /// <c>IAsyncDisposable</c> when any variant field implements it), and emits per-variant
+    /// <c>Take{Variant}</c> / <c>TryTake{Variant}</c> ownership-transfer helpers.
+    /// </summary>
+    /// <remarks>
+    /// The effective default is <c>false</c>.
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// If omitted, falls back to assembly-level <see cref="StructUnionOptionsAttribute"/> or the default (false).
+    /// When false and a variant carries a disposable field, the generator reports <c>SU0013</c>.
+    /// </remarks>
+    public bool GenerateDispose { get; set; }
 }

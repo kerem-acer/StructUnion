@@ -11,4 +11,6 @@ readonly record struct FieldModel(
     bool IsValueType,
     bool IsUnmanaged,
     int Size,
-    int Alignment);
+    int Alignment,
+    bool IsDisposable = false,
+    bool IsAsyncDisposable = false);

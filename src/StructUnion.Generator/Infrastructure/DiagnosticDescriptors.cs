@@ -102,6 +102,14 @@ static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor DisposableFieldWithoutOptIn = new(
+        id: "SU0013",
+        title: "Variant field is disposable but GenerateDispose is not enabled",
+        messageFormat: "Variant '{0}' has field '{1}' of type '{2}' which is disposable, but '{3}' does not opt into [StructUnion(GenerateDispose = true)]. Either enable disposal generation or store a non-owning reference.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public static DiagnosticDescriptor GetById(string id) => id switch
     {
         "SU0001" => StructMustBePartial,
@@ -116,6 +124,7 @@ static class DiagnosticDescriptors
         "SU0010" => GeneratedNameAndSuffixConflict,
         "SU0011" => ReservedVariantName,
         "SU0012" => InvalidIdentifier,
+        "SU0013" => DisposableFieldWithoutOptIn,
         _ => throw new ArgumentException($"Unknown diagnostic id: {id}", nameof(id))
     };
 }

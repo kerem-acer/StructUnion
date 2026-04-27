@@ -30,6 +30,7 @@ readonly record struct TypeExtract(
     string? PerTypeTag,
     bool? PerTypeNested,
     string? PerTypeSuffix,
+    bool? PerTypeGenerateDispose,
     // Serialized location for deferred diagnostics
     DiagnosticLocation Location);
 

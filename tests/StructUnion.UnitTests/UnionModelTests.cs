@@ -22,7 +22,7 @@ public class UnionModelTests
                     ImmutableArray.Create(new FieldModel("radius", "double", "public", true, true, 8, 8)).ToEquatableArray(),
                     1)).ToEquatableArray(),
             (commonFields ?? []).ToImmutableArray().ToEquatableArray(),
-            LayoutStrategy.Explicit, true, 8, 8, 16, 8, GenerationMode.PartialStruct, "Tag", false);
+            LayoutStrategy.Explicit, true, 8, 8, 16, 8, GenerationMode.PartialStruct, "Tag", false, false);
 
     [Test]
     public async Task HasCommonFields_Empty_ReturnsFalse()
