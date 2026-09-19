@@ -4,13 +4,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
-    <PackageVersion Include="Polyfill" Version="9.24.1" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
-    <PackageVersion Include="TUnit" Version="1.27.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageVersion Include="Polyfill" Version="11.4.0" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Include="TUnit" Version="1.68.17" />
     <PackageVersion Include="Verify.SourceGenerators" Version="2.5.0" />
-    <PackageVersion Include="Verify.TUnit" Version="31.15.0" />
-    <PackageVersion Include="Imposter" Version="0.1.9" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
-  </ItemGroup>
+    <PackageVersion Include="Verify.TUnit" Version="33.1.0" />
+    <PackageVersion Include="Imposter" Version="0.1.11" />  </ItemGroup>
 </Project>
