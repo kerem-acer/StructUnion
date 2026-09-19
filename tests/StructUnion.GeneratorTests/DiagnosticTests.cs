@@ -673,6 +673,27 @@ public class DiagnosticTests
     }
 
     [Test]
+    public async Task VariantNamedReservedWordDifferentCase_ReportsSU0011()
+    {
+        var source = """
+            using StructUnion;
+
+            [StructUnion]
+            public readonly partial struct MyUnion
+            {
+                public static partial MyUnion tags(string label);
+                public static partial MyUnion Other(int x);
+            }
+            """;
+
+        var driver = GeneratorTestHelper.CreateDriver(source);
+        var result = driver.GetRunResult();
+
+        await Assert.That(result.GeneratedTrees.Length).IsEqualTo(0);
+        await Assert.That(result.Diagnostics).Contains(d => d.Id == "SU0011");
+    }
+
+    [Test]
     public async Task TemplateVariantNamedDefault_ReportsSU0011()
     {
         var source = """
