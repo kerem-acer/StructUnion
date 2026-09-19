@@ -15,8 +15,26 @@
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
 
+    <!-- The SDK discovers .globalconfig by walking every directory above each source file. A git
+         worktree placed inside the repo (.claude/worktrees/<name>) therefore picks up the outer
+         checkout's .globalconfig as well as its own. Keys duplicated across global configs are
+         treated as conflicting and dropped, which silently un-suppresses every rule configured
+         there. Pin discovery to the .globalconfig beside this file instead. -->
+    <PropertyGroup>
+        <DiscoverGlobalAnalyzerConfigFiles>false</DiscoverGlobalAnalyzerConfigFiles>
+    </PropertyGroup>
+
+    <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory).globalconfig')">
+        <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory).globalconfig" />
+        <EditorConfigFiles Include="$(MSBuildThisFileDirectory).globalconfig" />
+    </ItemGroup>
+
     <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
         <IsPackable>false</IsPackable>
         <NoWarn>$(NoWarn);CA1707;CA2012;MA0042;S6966;S2068;S5445;EPC29</NoWarn>
+
+        <!-- Verify maintenance fee: open source, non-revenue exemption. Time-bounded (max 12 months) — renew before it lapses. -->
+        <Verify_SponsorshipExemption>OpenSource</Verify_SponsorshipExemption>
+        <Verify_SponsorshipExemptionUntil>2027-09</Verify_SponsorshipExemptionUntil>
     </PropertyGroup>
 </Project>
