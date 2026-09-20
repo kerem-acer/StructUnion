@@ -42,7 +42,10 @@ static class CasesEmitter
             return;
         }
 
-        sb.AppendLine($"public readonly struct {variant.Name}");
+        // A case struct holding a ref-like field must itself be a ref struct.
+        var refModifier = variant.HasAnyRefLikeParameter ? "ref " : "";
+
+        sb.AppendLine($"public readonly {refModifier}struct {variant.Name}");
         using (sb.Block())
         {
             foreach (var param in variant.Parameters)

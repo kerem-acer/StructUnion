@@ -25,7 +25,18 @@ static class ToStringEmitter
                 var parts = variant.Parameters.Select(p =>
                 {
                     var field = variant.FieldName(p.Name);
-                    return $"{{{field}}}";
+
+                    // A ref-like type with no ToString() override of its own cannot be rendered at
+                    // all: the inherited object.ToString() would box the receiver. Name the field
+                    // instead, matching the "<invalid>" placeholder style below.
+                    if (!p.IsRenderable)
+                    {
+                        return $"<{p.Name}>";
+                    }
+
+                    // A bare hole routes through the handler's generic AppendFormatted<T>, which a
+                    // ref-like type cannot satisfy — so call ToString() and hand over a string.
+                    return p.IsRefLike ? $"{{{field}.ToString()}}" : $"{{{field}}}";
                 });
                 sb.AppendLine($"Tags.{variant.Name} => $\"{variant.Name}({string.Join(", ", parts)})\",");
             }

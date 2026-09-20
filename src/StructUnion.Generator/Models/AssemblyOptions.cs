@@ -11,6 +11,7 @@ readonly record struct AssemblyOptions(
     bool? NestedAccessors,
     bool? GenerateDispose,
     bool? NativeUnion,
+    bool? GenerateEquality,
     // Compilation capabilities, projected here rather than through a second CompilationProvider
     // node. All primitives, so the record's structural equality keeps the cache key stable.
     bool HasUnionAttributeType,

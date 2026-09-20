@@ -79,12 +79,20 @@ static class RoslynExtensions
                 constraints.Add("new()");
             }
 
+            // Must come last — C# requires `allows ref struct` to be the final constraint clause.
+            // Dropping it would silently strip the modifier from the generated partial declaration,
+            // leaving a `T` field the containing struct is not allowed to hold.
+            if (tp.AllowsRefLikeType)
+            {
+                constraints.Add("allows ref struct");
+            }
+
             result.Add(new TypeParameterModel(tp.Name, constraints.ToImmutable().ToEquatableArray()));
         }
         return result.ToImmutable().ToEquatableArray();
     }
 
-    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose, bool? NativeUnion)
+    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose, bool? NativeUnion, bool? GenerateEquality)
         GetStructUnionAttributeProps(this GeneratorAttributeSyntaxContext ctx)
     {
         bool? enableImplicit = null;
@@ -94,6 +102,7 @@ static class RoslynExtensions
         string? suffix = null;
         bool? generateDispose = null;
         bool? nativeUnion = null;
+        bool? generateEquality = null;
 
         foreach (var attr in ctx.Attributes)
         {
@@ -124,11 +133,14 @@ static class RoslynExtensions
                     case nameof(StructUnionAttribute.NativeUnion) when named.Value.Value is bool native:
                         nativeUnion = native;
                         break;
+                    case nameof(StructUnionAttribute.GenerateEquality) when named.Value.Value is bool equality:
+                        generateEquality = equality;
+                        break;
                 }
             }
         }
 
-        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose, nativeUnion);
+        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose, nativeUnion, generateEquality);
     }
 
     /// <summary>
@@ -145,6 +157,7 @@ static class RoslynExtensions
         bool? nestedAccessors = null;
         bool? generateDispose = null;
         bool? nativeUnion = null;
+        bool? generateEquality = null;
 
         foreach (var attr in compilation.Assembly.GetAttributes())
         {
@@ -172,6 +185,9 @@ static class RoslynExtensions
                         case nameof(StructUnionOptionsAttribute.NativeUnion) when named.Value.Value is bool native:
                             nativeUnion = native;
                             break;
+                        case nameof(StructUnionOptionsAttribute.GenerateEquality) when named.Value.Value is bool equality:
+                            generateEquality = equality;
+                            break;
                     }
                 }
             }
@@ -188,6 +204,7 @@ static class RoslynExtensions
             nestedAccessors,
             generateDispose,
             nativeUnion,
+            generateEquality,
             HasPublicType(compilation, "System.Runtime.CompilerServices.UnionAttribute"),
             HasPublicType(compilation, "System.Runtime.CompilerServices.IUnion"),
             languageVersion,
@@ -254,6 +271,185 @@ static class RoslynExtensions
                 foreach (var c in tp.ConstraintTypes)
                 {
                     if (IsOrImplements(c, interfaceFqn))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Finds which equality members the user already declared on the union, so the generator can
+    /// skip exactly those instead of colliding with them.
+    /// </summary>
+    /// <remarks>
+    /// Generated members are not visible here — a source generator sees only the pre-generation
+    /// compilation — so there are no false positives from the generator's own output. Explicit
+    /// interface implementations are deliberately not detected: they are named
+    /// <c>System.IEquatable&lt;T&gt;.Equals</c> rather than <c>Equals</c>, and they occupy a separate
+    /// declaration space, so they cannot collide with a generated member anyway.
+    /// </remarks>
+    public static UserEqualityMembers GetUserEqualityMembers(this INamedTypeSymbol symbol)
+    {
+        var equalsSelf = false;
+        var equalsObject = false;
+
+        foreach (var member in symbol.GetMembers("Equals"))
+        {
+            if (member is not IMethodSymbol { Parameters.Length: 1 } method)
+            {
+                continue;
+            }
+
+            var parameterType = method.Parameters[0].Type;
+            if (SymbolEqualityComparer.Default.Equals(parameterType, symbol))
+            {
+                equalsSelf = true;
+            }
+            else if (parameterType.SpecialType == SpecialType.System_Object)
+            {
+                equalsObject = true;
+            }
+        }
+
+        var getHashCode = false;
+        foreach (var member in symbol.GetMembers("GetHashCode"))
+        {
+            if (member is IMethodSymbol { Parameters.Length: 0 })
+            {
+                getHashCode = true;
+            }
+        }
+
+        // == and != are treated as one unit: C# requires them in pairs, so generating the other half
+        // of a user's operator would silently pair two operators with different semantics.
+        var operators =
+            HasUserDefinedOperator(symbol, WellKnownMemberNames.EqualityOperatorName)
+            || HasUserDefinedOperator(symbol, WellKnownMemberNames.InequalityOperatorName);
+
+        return new(equalsSelf, equalsObject, getHashCode, operators);
+
+        static bool HasUserDefinedOperator(INamedTypeSymbol symbol, string name)
+        {
+            foreach (var member in symbol.GetMembers(name))
+            {
+                if (member is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator })
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// True if the type overrides <see cref="object.ToString"/> with its own implementation.
+    /// </summary>
+    /// <remarks>
+    /// Only meaningful for ref-like types, and load-bearing for them: calling the <em>inherited</em>
+    /// <c>object.ToString()</c> on a ref struct receiver needs a boxing conversion, which is illegal,
+    /// so <c>field.ToString()</c> only compiles when the type declares its own override.
+    /// <c>Span&lt;T&gt;</c> and <c>ReadOnlySpan&lt;T&gt;</c> do; a plain user <c>ref struct</c> usually
+    /// does not. A type parameter never counts — there is no way to know what it will be.
+    /// </remarks>
+    public static bool OverridesToString(this ITypeSymbol type)
+    {
+        if (type is null or ITypeParameterSymbol)
+        {
+            return false;
+        }
+
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (current.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType)
+            {
+                break;
+            }
+
+            foreach (var member in current.GetMembers(nameof(ToString)))
+            {
+                if (member is IMethodSymbol { Parameters.Length: 0, IsOverride: true })
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines how a ref-like type can be compared: whether it declares an <c>operator ==</c>
+    /// and whether it implements <c>IEquatable&lt;itself&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>Only meaningful for ref-like types. Every other type has
+    /// <c>EqualityComparer&lt;T&gt;.Default</c> as a universal fallback, but a ref-like type cannot
+    /// be a generic type argument there, and cannot be boxed to reach <c>object.Equals</c> — so if
+    /// it declares neither of these, it cannot be compared at all.</para>
+    /// <para><c>Span&lt;T&gt;</c> and <c>ReadOnlySpan&lt;T&gt;</c> declare <c>operator ==</c> and do
+    /// <em>not</em> implement <c>IEquatable</c>, which is why both probes are needed rather than
+    /// just the interface one.</para>
+    /// <para>As with <see cref="ClassifyDisposable"/>, a type parameter is judged only by its
+    /// constraints — an unconstrained <c>T</c> reports false for both.</para>
+    /// </remarks>
+    public static (bool DeclaresEqualityOperator, bool ImplementsIEquatableSelf) ClassifyEquality(
+        this ITypeSymbol type)
+    {
+        if (type is null)
+        {
+            return (false, false);
+        }
+
+        return (DeclaresEqualityOperator(type), ImplementsIEquatableSelf(type));
+
+        static bool DeclaresEqualityOperator(ITypeSymbol type)
+        {
+            foreach (var member in type.GetMembers(WellKnownMemberNames.EqualityOperatorName))
+            {
+                if (member is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator })
+                {
+                    return true;
+                }
+            }
+
+            if (type is ITypeParameterSymbol tp)
+            {
+                foreach (var c in tp.ConstraintTypes)
+                {
+                    if (DeclaresEqualityOperator(c))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        static bool ImplementsIEquatableSelf(ITypeSymbol type)
+        {
+            foreach (var iface in type.AllInterfaces)
+            {
+                // The type argument varies, so this cannot compare a fully-qualified string the way
+                // ClassifyDisposable does — the open generic and the argument are matched separately.
+                if (iface is { IsGenericType: true, TypeArguments.Length: 1 }
+                    && iface.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                        == "global::System.IEquatable<T>"
+                    && SymbolEqualityComparer.Default.Equals(iface.TypeArguments[0], type))
+                {
+                    return true;
+                }
+            }
+
+            if (type is ITypeParameterSymbol tp)
+            {
+                foreach (var c in tp.ConstraintTypes)
+                {
+                    if (ImplementsIEquatableSelf(c))
                     {
                         return true;
                     }

@@ -21,19 +21,60 @@ static class EqualityEmitter
     /// </summary>
     static readonly HashSet<string> InstanceEqualsTypes = ["float", "double"];
 
-    static string EmitFieldComparison(string fieldExpr, string otherFieldExpr, string typeFullyQualified) =>
-        DirectEqualityTypes.Contains(typeFullyQualified)
+    static string EmitFieldComparison(string fieldExpr, string otherFieldExpr, FieldModel field)
+    {
+        var typeFullyQualified = field.TypeFullyQualified;
+
+        // A ref-like type cannot be a generic type argument, so EqualityComparer<T>.Default — the
+        // universal fallback below — is unavailable. Only its own members can compare it. Callers
+        // must have established the field is comparable; SU0019 covers the case where it is not.
+        if (field.IsRefLike)
+        {
+            return field.DeclaresEqualityOperator
+                ? $"{fieldExpr} == other.{otherFieldExpr}"
+                : $"{fieldExpr}.Equals(other.{otherFieldExpr})";
+        }
+
+        return DirectEqualityTypes.Contains(typeFullyQualified)
             ? $"{fieldExpr} == other.{otherFieldExpr}"
             : InstanceEqualsTypes.Contains(typeFullyQualified)
                 ? $"{fieldExpr}.Equals(other.{otherFieldExpr})"
                 : $"global::System.Collections.Generic.EqualityComparer<{typeFullyQualified}>.Default.Equals({fieldExpr}, other.{otherFieldExpr})";
+    }
 
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
         var typeName = model.TypeNameWithParameters;
+
+        if (model.EmitsEqualsSelf)
+        {
+            EmitEqualsSelf(sb, model, typeName);
+            sb.AppendLine();
+        }
+
+        if (model.EmitsEqualsObject)
+        {
+            EmitEqualsObject(sb, model, typeName);
+            sb.AppendLine();
+        }
+
+        if (model.EmitsGetHashCode)
+        {
+            EmitGetHashCode(sb, model);
+            sb.AppendLine();
+        }
+
+        if (model.EmitsEqualityOperators)
+        {
+            sb.AppendLine($"public static bool operator ==({typeName} left, {typeName} right) => left.Equals(right);");
+            sb.AppendLine($"public static bool operator !=({typeName} left, {typeName} right) => !left.Equals(right);");
+        }
+    }
+
+    static void EmitEqualsSelf(SourceBuilder sb, UnionModel model, string typeName)
+    {
         var tag = model.TagField;
 
-        // Equals(T other)
         sb.AppendLine($"public bool Equals({typeName} other)");
         using (sb.Block())
         {
@@ -42,7 +83,7 @@ static class EqualityEmitter
             // Common fields
             foreach (var field in model.CommonFields)
             {
-                var cmp = EmitFieldComparison(field.Name, field.Name, field.TypeFullyQualified);
+                var cmp = EmitFieldComparison(field.Name, field.Name, field);
                 sb.AppendLine($"if (!({cmp})) return false;");
             }
 
@@ -59,7 +100,7 @@ static class EqualityEmitter
                 var comparisons = variant.Parameters.Select(p =>
                 {
                     var fn = variant.FieldName(p.Name);
-                    return EmitFieldComparison(fn, fn, p.TypeFullyQualified);
+                    return EmitFieldComparison(fn, fn, p);
                 });
                 sb.AppendLine($"Tags.{variant.Name} => {string.Join(" && ", comparisons)},");
             }
@@ -67,21 +108,55 @@ static class EqualityEmitter
             sb.CloseBraceNoNewline();
             sb.AppendLine(";");
         }
+    }
 
-        sb.AppendLine();
+    static void EmitEqualsObject(SourceBuilder sb, UnionModel model, string typeName)
+    {
+        // A ref struct can never be boxed, so `obj is Self` is a compile error (CS8121) rather than
+        // a check that fails at runtime. Following the Span<T> precedent, the override exists only to
+        // make the mistake loud: [Obsolete(error)] rejects any call site that could reach it.
+        if (model.HasAnyRefLikeField)
+        {
+            var reason = $"Equals(object) is not supported on {model.Name} because a ref struct cannot be boxed.";
 
-        // Equals(object?)
+            // Only point at the strongly-typed overload when one actually exists — equality may have
+            // been suppressed, in which case there is nothing to redirect the caller to.
+            var advice = model.HasEqualsSelf ? $" Use Equals({typeName}) instead." : "";
+
+            sb.AppendLine($"[global::System.Obsolete(\"{reason}{advice}\", true)]");
+            sb.AppendLine("public override bool Equals(object? obj) =>");
+            using (sb.Indent())
+            {
+                sb.AppendLine($"throw new global::System.NotSupportedException(\"{reason}\");");
+            }
+
+            return;
+        }
+
         sb.AppendLine($"public override bool Equals(object? obj) => obj is {typeName} other && Equals(other);");
-        sb.AppendLine();
+    }
 
-        // GetHashCode
+    static void EmitGetHashCode(SourceBuilder sb, UnionModel model)
+    {
+        var tag = model.TagField;
+
+        // HashCode.Combine and HashCode.Add are both generic, so ref-like fields cannot be hashed at
+        // all. They are skipped rather than fatal: a hash over the tag and the remaining fields still
+        // satisfies the contract that equal values hash equally — it just distinguishes fewer values.
+        var commonFields = model.CommonFields.Where(f => !f.IsRefLike).ToList();
+        var hashableParameters = new Dictionary<string, List<FieldModel>>();
+        foreach (var variant in model.Variants)
+        {
+            hashableParameters[variant.Name] = variant.Parameters.Where(p => !p.IsRefLike).ToList();
+        }
+
         sb.AppendLine("public override int GetHashCode()");
         using (sb.Block())
         {
             var needsBuilder = false;
             foreach (var variant in model.Variants)
             {
-                if (1 + model.CommonFields.Count + variant.Parameters.Count > 8)
+                if (1 + commonFields.Count + hashableParameters[variant.Name].Count > 8)
                 {
                     needsBuilder = true;
                     break;
@@ -92,7 +167,7 @@ static class EqualityEmitter
             {
                 sb.AppendLine($"var hash = new global::System.HashCode();");
                 sb.AppendLine($"hash.Add({tag});");
-                foreach (var field in model.CommonFields)
+                foreach (var field in commonFields)
                 {
                     sb.AppendLine($"hash.Add({field.Name});");
                 }
@@ -102,7 +177,7 @@ static class EqualityEmitter
                 {
                     foreach (var variant in model.Variants)
                     {
-                        if (variant.Parameters.Count == 0)
+                        if (hashableParameters[variant.Name].Count == 0)
                         {
                             continue;
                         }
@@ -110,7 +185,7 @@ static class EqualityEmitter
                         sb.AppendLine($"case Tags.{variant.Name}:");
                         using (sb.Indent())
                         {
-                            foreach (var param in variant.Parameters)
+                            foreach (var param in hashableParameters[variant.Name])
                             {
                                 sb.AppendLine($"hash.Add({variant.FieldName(param.Name)});");
                             }
@@ -129,12 +204,12 @@ static class EqualityEmitter
                 foreach (var variant in model.Variants)
                 {
                     var hashParts = new List<string> { tag };
-                    foreach (var field in model.CommonFields)
+                    foreach (var field in commonFields)
                     {
                         hashParts.Add(field.Name);
                     }
 
-                    foreach (var param in variant.Parameters)
+                    foreach (var param in hashableParameters[variant.Name])
                     {
                         hashParts.Add(variant.FieldName(param.Name));
                     }
@@ -146,11 +221,5 @@ static class EqualityEmitter
                 sb.AppendLine(";");
             }
         }
-
-        sb.AppendLine();
-
-        // Operators
-        sb.AppendLine($"public static bool operator ==({typeName} left, {typeName} right) => left.Equals(right);");
-        sb.AppendLine($"public static bool operator !=({typeName} left, {typeName} right) => !left.Equals(right);");
     }
 }

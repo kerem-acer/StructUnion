@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using StructUnion.Generator;
@@ -45,6 +46,70 @@ public static class GeneratorTestHelper
     {
         var parseOptions = new CSharpParseOptions(languageVersion);
 
+        return CreateDriver(parseOptions)
+            .RunGenerators(BuildCompilation(source, includeUnionRuntime, parseOptions));
+    }
+
+    /// <summary>
+    /// Runs the generator and returns the compiler errors in the <em>generated</em> output.
+    /// </summary>
+    /// <remarks>
+    /// <para>The snapshot tests only diff text, so nothing else in the suite proves the generated
+    /// code compiles. Whole classes of defect — a missing <c>ref</c> modifier, a generic type
+    /// argument a ref struct cannot satisfy, ref-safety escapes — are invisible to a snapshot and
+    /// show up only here.</para>
+    /// <para>The reference set is scraped from the running process, which targets net10.0 and does
+    /// <em>not</em> carry <c>UnionAttribute</c>; pass <paramref name="includeUnionRuntime"/> for any
+    /// native-union source, or the errors will be about the missing attribute rather than the code
+    /// under test.</para>
+    /// </remarks>
+    public static ImmutableArray<Diagnostic> GetGeneratedCompilationErrors(
+        string source,
+        bool includeUnionRuntime = false,
+        LanguageVersion languageVersion = LanguageVersion.Preview)
+    {
+        var parseOptions = new CSharpParseOptions(languageVersion);
+
+        CreateDriver(parseOptions)
+            .RunGeneratorsAndUpdateCompilation(
+                BuildCompilation(source, includeUnionRuntime, parseOptions),
+                out var updated,
+                out _);
+
+        return updated.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToImmutableArray();
+    }
+
+    /// <summary>
+    /// Asserts that the user source plus everything the generator produced for it compiles clean.
+    /// </summary>
+    public static void AssertGeneratedCompiles(
+        string source,
+        bool includeUnionRuntime = false,
+        LanguageVersion languageVersion = LanguageVersion.Preview)
+    {
+        var errors = GetGeneratedCompilationErrors(source, includeUnionRuntime, languageVersion);
+        if (errors.Length == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Generated code did not compile ({errors.Length} error(s)):{Environment.NewLine}"
+            + string.Join(Environment.NewLine, errors.Select(d => $"  {d.Id}: {d.GetMessage()} @ {d.Location.GetLineSpan()}")));
+    }
+
+    static CSharpGeneratorDriver CreateDriver(CSharpParseOptions parseOptions) =>
+        CSharpGeneratorDriver.Create(
+            [new StructUnionGenerator().AsSourceGenerator()],
+            parseOptions: parseOptions);
+
+    static CSharpCompilation BuildCompilation(
+        string source,
+        bool includeUnionRuntime,
+        CSharpParseOptions parseOptions)
+    {
         var syntaxTrees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(source, parseOptions) };
         if (includeUnionRuntime)
         {
@@ -70,16 +135,10 @@ public static class GeneratorTestHelper
             }
         }
 
-        var compilation = CSharpCompilation.Create(
+        return CSharpCompilation.Create(
             assemblyName: "TestAssembly",
             syntaxTrees: syntaxTrees,
             references: references,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-        var generator = new StructUnionGenerator();
-
-        return CSharpGeneratorDriver
-            .Create([generator.AsSourceGenerator()], parseOptions: parseOptions)
-            .RunGenerators(compilation);
     }
 }

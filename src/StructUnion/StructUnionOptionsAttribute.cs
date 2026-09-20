@@ -66,4 +66,14 @@ sealed class StructUnionOptionsAttribute : Attribute
     /// pattern-matching behaviour this changes.
     /// </remarks>
     public bool NativeUnion { get; set; }
+
+    /// <summary>
+    /// When true, generated structs implement <see cref="IEquatable{T}"/> and get <c>Equals</c>,
+    /// <c>GetHashCode</c>, <c>==</c> and <c>!=</c>. The effective default is <c>true</c>.
+    /// </summary>
+    /// <remarks>
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// Can be overridden per-type via <see cref="StructUnionAttribute.GenerateEquality"/>.
+    /// </remarks>
+    public bool GenerateEquality { get; set; }
 }

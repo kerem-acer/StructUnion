@@ -284,6 +284,37 @@ public class LayoutCalculatorTests
     }
 
     [Test]
+    public async Task DetermineStrategy_UnmanagedRefStruct_ReturnsAuto()
+    {
+        // A ref struct whose own fields are all unmanaged reports IsUnmanagedType == true and has a
+        // perfectly computable size, so the managed-value-type test alone lets it reach Explicit
+        // layout. It still carries a byref, which cannot sit at a FieldOffset — and the C# compiler
+        // accepts LayoutKind.Explicit on a ref struct silently, so nothing downstream would catch it.
+        var refStructField = new FieldModel("p", "Plain", "public",
+            IsValueType: true, IsUnmanaged: true, Size: 4, Alignment: 4, IsRefLike: true);
+        var variants = ImmutableArray.Create(
+            new VariantModel("A", ImmutableArray.Create(refStructField).ToEquatableArray(), 1));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
+    }
+
+    [Test]
+    public async Task DetermineStrategy_RefLikeCommonField_ReturnsAuto()
+    {
+        var common = new FieldModel[]
+        {
+            new("data", "System.Span<byte>", "public",
+                IsValueType: true, IsUnmanaged: false, Size: 16, Alignment: 8, IsRefLike: true)
+        };
+        var variants = MakeVariants(
+            ("A", MakeFields(("x", "int", true, 4, 4))));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, common);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
+    }
+
+    [Test]
     public async Task DetermineStrategy_UnknownCommonFieldSize_ReturnsAuto()
     {
         var common = new FieldModel[] { new("id", "T", "public", true, true, -1, -1) };
