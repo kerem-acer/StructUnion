@@ -20,7 +20,7 @@ static class LayoutCalculator
     {
         foreach (var field in commonFields)
         {
-            if (field.Size < 0 || field.Alignment < 0)
+            if (field.Size < 0 || field.Alignment < 0 || IsIneligibleForOverlap(field))
             {
                 return LayoutStrategy.Auto;
             }
@@ -30,11 +30,9 @@ static class LayoutCalculator
         {
             foreach (var param in variant.Parameters)
             {
-                // Fall back to Auto when sizes are unknowable (generic T)
-                // or when a field is a managed value type (value type containing
-                // references, e.g. ValueTuple<string, int>). The CLR cannot track
-                // GC roots in managed value types placed in overlapping explicit layout.
-                if (param.Size < 0 || param.Alignment < 0 || IsManagedValueType(param))
+                // Fall back to Auto when sizes are unknowable (generic T) or when a field cannot
+                // legally participate in overlapping explicit layout.
+                if (param.Size < 0 || param.Alignment < 0 || IsIneligibleForOverlap(param))
                 {
                     return LayoutStrategy.Auto;
                 }
@@ -45,11 +43,20 @@ static class LayoutCalculator
     }
 
     /// <summary>
-    /// A managed value type is a value type that contains reference fields.
-    /// These cannot participate in explicit layout with overlapping offsets.
+    /// True if the field cannot sit at an explicit <c>FieldOffset</c>.
     /// </summary>
-    static bool IsManagedValueType(FieldModel field) =>
-        field.IsValueType && !field.IsUnmanaged;
+    /// <remarks>
+    /// Two distinct reasons, and the ref-like one is not implied by the other: a managed value type
+    /// (a value type containing references, e.g. <c>ValueTuple&lt;string, int&gt;</c>) is excluded
+    /// because the CLR cannot track GC roots through overlapping explicit layout. A ref-like type is
+    /// excluded because it carries a byref, which has no representation at a fixed offset — and a
+    /// <c>ref struct</c> whose own fields are all unmanaged reports <c>IsUnmanagedType == true</c>,
+    /// so the managed-value-type test alone lets it through. The C# compiler accepts
+    /// <c>LayoutKind.Explicit</c> on a ref struct without complaint, so nothing downstream catches
+    /// the mistake.
+    /// </remarks>
+    static bool IsIneligibleForOverlap(FieldModel field) =>
+        field.IsRefLike || (field.IsValueType && !field.IsUnmanaged);
 
     /// <summary>
     /// Computes the starting offsets for the ref zone and value zone.

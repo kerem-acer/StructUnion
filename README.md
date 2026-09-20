@@ -312,6 +312,111 @@ await using var r = Resource.File(asyncDisposable);
 
 Can be set assembly-wide via `[assembly: StructUnionOptions(GenerateDispose = true)]`.
 
+### Ref Struct Fields
+
+Variants can carry `Span<T>`, `ReadOnlySpan<T>`, or any `ref struct`. Declare the union `ref` and the
+rest follows:
+
+```csharp
+[StructUnion]
+public readonly ref partial struct Payload
+{
+    public static partial Payload Bytes(Span<byte> data);
+    public static partial Payload Text(ReadOnlySpan<char> text);
+    public static partial Payload Number(int value);
+}
+
+Span<byte> buffer = stackalloc byte[3];
+var p = Payload.Bytes(buffer);
+int length = p.Match(
+    bytes: b => b.Length,
+    text: t => t.Length,
+    number: n => n);
+```
+
+The generator will **not** add `ref` for you — it reports `SU0018` instead. Adding it silently would
+make your type non-boxable, unusable as a field of a class and unusable in a `List<T>`, so the change
+belongs in your declaration where it is visible.
+
+Ref safety is preserved end to end. A stack buffer still cannot escape through a generated factory:
+
+```csharp
+static Payload Leak()
+{
+    Span<byte> local = stackalloc byte[4];
+    return Payload.Bytes(local); // CS8347: may expose variables outside their declaration scope
+}
+```
+
+**Equality is pointer identity, not element equality.** `Span<T>.operator ==` compares reference and
+length, so two spans over distinct buffers with identical contents are not equal:
+
+```csharp
+byte[] a = [1, 2, 3];
+Payload.Bytes(a) == Payload.Bytes(a);             // true
+Payload.Bytes(a) == Payload.Bytes([1, 2, 3]);     // false — different buffer
+```
+
+Three further consequences of the CLR's rules, all handled automatically:
+
+- **Layout is always `Auto`.** A byref has no representation at a fixed `FieldOffset`.
+- **`GetHashCode` skips ref-like fields**, hashing the tag and the remaining fields. Equal values still
+  hash equally — the hash just distinguishes fewer values.
+- **`Equals(object)` throws** and is marked `[Obsolete(error: true)]`, following the `Span<T>`
+  precedent, because a ref struct can never be boxed to reach it.
+
+A `ref struct` of your own must declare `operator ==` or implement `IEquatable<itself>` to be
+comparable — a ref struct cannot be a generic type argument to `EqualityComparer<T>`, and cannot be
+boxed to reach `object.Equals`, so there is no fallback. Without one, equality is skipped for the whole
+union and the generator reports `SU0019`.
+
+Generic unions work too, with `allows ref struct`. Since `T` has no statically known comparison, these
+always take the `SU0019` path:
+
+```csharp
+[StructUnion]
+public readonly ref partial struct Box<T> where T : allows ref struct
+{
+    public static partial Box<T> Some(T value);
+    public static partial Box<T> None();
+}
+```
+
+Not supported together with `NativeUnion` (`SU0020`): the union contract exposes cases through a boxing
+`object? Value`.
+
+### Controlling Equality
+
+By default the generated struct implements `IEquatable<T>` and gets `Equals`, `GetHashCode`, `==` and
+`!=`. Writing any of those yourself suppresses **just that member** — the rest still generate and
+delegate to yours:
+
+```csharp
+[StructUnion]
+public readonly partial struct Shape
+{
+    public static partial Shape Circle(double radius);
+    public static partial Shape Square(double side);
+
+    // Generated Equals(object), == and != now call this one.
+    public bool Equals(Shape other) => Tag == other.Tag;
+}
+```
+
+`==` and `!=` are treated as a pair, since C# requires them together — declaring one suppresses both.
+
+To suppress the whole set, set `GenerateEquality = false`:
+
+```csharp
+[StructUnion(GenerateEquality = false)]
+public readonly partial struct Shape { /* ... */ }
+```
+
+That drops `IEquatable<T>` from the base list along with every equality member. Note that a
+hand-written `Equals` combined with a *generated* `GetHashCode` can break the equal-implies-same-hash
+contract if your equality is looser than field equality — override `GetHashCode` too in that case. Can
+be set assembly-wide via `[assembly: StructUnionOptions(GenerateEquality = false)]`.
+
 ### Native C# 15 Unions
 
 C# 15 (.NET 11) lets any type opt into being a *union type*, gaining implicit conversions from
@@ -396,7 +501,8 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
     EnableImplicitConversions = false,    // disable implicit conversions project-wide
     NestedAccessors = true,               // enable nested accessors project-wide
     GenerateDispose = true,               // generate Dispose/DisposeAsync where applicable
-    NativeUnion = true)]                  // emit C# 15 union members (net11.0)
+    NativeUnion = true,                   // emit C# 15 union members (net11.0)
+    GenerateEquality = false)]            // suppress Equals/GetHashCode/==/!= project-wide
 ```
 
 ## Diagnostics
@@ -420,6 +526,9 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
 | SU0015 | Warning | `NativeUnion` requires C# 15 (`<LangVersion>preview</LangVersion>`) |
 | SU0016 | Error | `NativeUnion` is not supported for unions with common fields |
 | SU0017 | Error | Member name conflicts with a generated nested type (`Cases`, `IUnionMembers`) |
+| SU0018 | Error | Union carries a `ref struct` field but is not declared `ref` |
+| SU0019 | Warning | A `ref struct` field declares neither `operator ==` nor `IEquatable<itself>`, so equality was not generated |
+| SU0020 | Error | `NativeUnion` is not supported for unions with `ref struct` fields |
 
 ## How It Works
 
@@ -432,7 +541,7 @@ The generator produces structs with `[StructLayout(LayoutKind.Explicit)]` where 
 
 For example, `Shape` with three double-based variants occupies just 24 bytes: 1 byte tag + 7 bytes padding + 16 bytes payload (2 doubles).
 
-When the generator cannot determine field sizes at compile time — generic type parameters or managed value types (e.g., `ValueTuple<string, int>`) — it falls back to sequential (`Auto`) layout. The generated API is identical; only the internal memory strategy differs.
+When a field cannot sit at an explicit offset, the generator falls back to sequential (`Auto`) layout. That happens for unknowable sizes (generic type parameters), managed value types (e.g. `ValueTuple<string, int>`, whose GC references the CLR cannot track through overlapping fields), and `ref struct` fields (a byref has no representation at a fixed offset). The generated API is identical; only the internal memory strategy differs.
 
 ## Requirements
 
@@ -444,6 +553,9 @@ When the generator cannot determine field sizes at compile time — generic type
 - **`NativeUnion` mode:** requires the consuming project to target `net11.0` and set
   `<LangVersion>preview</LangVersion>`. On any earlier target the generator reports `SU0014` and
   generates the standard API without the union members.
+- **Ref struct fields:** a `Span<T>` or `ref struct` variant needs no particular target — any framework
+  where the type is available will do. The *generic* form, `where T : allows ref struct`, is C# 13 and
+  so needs `net9.0` or later.
 
 ## Building
 

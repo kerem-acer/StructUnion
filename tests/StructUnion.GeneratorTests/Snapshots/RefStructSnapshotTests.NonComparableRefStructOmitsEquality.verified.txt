@@ -1,0 +1,18 @@
+﻿{
+  Diagnostics: [
+    {
+      Location: : (6,35)-(6,41),
+      Message: Variant 'Buf' has field 'buffer' of type 'global::Buffer', which is a ref struct declaring neither 'operator ==' nor 'IEquatable<global::Buffer>'. A ref struct cannot be a generic type argument, so there is no fallback comparison, and equality members were not generated for 'Holder'. Add 'operator ==' or 'IEquatable<global::Buffer>' to 'global::Buffer', or write the equality members yourself.,
+      Severity: Warning,
+      WarningLevel: 1,
+      Descriptor: {
+        Id: SU0019,
+        Title: Ref struct field cannot be compared, so equality was not generated,
+        MessageFormat: Variant '{0}' has field '{1}' of type '{2}', which is a ref struct declaring neither 'operator ==' nor 'IEquatable<{2}>'. A ref struct cannot be a generic type argument, so there is no fallback comparison, and equality members were not generated for '{3}'. Add 'operator ==' or 'IEquatable<{2}>' to '{2}', or write the equality members yourself.,
+        Category: StructUnion,
+        DefaultSeverity: Warning,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}

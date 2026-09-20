@@ -12,4 +12,23 @@ readonly record struct VariantModel(
 
     /// <summary>Returns the backing field name for a variant parameter.</summary>
     public string FieldName(string paramName) => $"_{NameLower}_{paramName}";
+
+    /// <summary>
+    /// True if any parameter is ref-like, which forces this variant's generated
+    /// <c>Cases</c> struct to be declared <c>ref struct</c>.
+    /// </summary>
+    public bool HasAnyRefLikeParameter
+    {
+        get
+        {
+            foreach (var p in Parameters)
+            {
+                if (p.IsRefLike)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 }

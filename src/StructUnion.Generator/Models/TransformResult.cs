@@ -32,6 +32,14 @@ readonly record struct TypeExtract(
     string? PerTypeSuffix,
     bool? PerTypeGenerateDispose,
     bool? PerTypeNativeUnion,
+    bool? PerTypeGenerateEquality,
+    // Equality members the user already declared, so the generator can skip exactly those.
+    // Always default in template mode.
+    UserEqualityMembers UserEquality,
+    // True if the user declared the struct as `ref`. Read from the symbol rather than the syntax, so
+    // `ref` on any of the user's partial declarations counts. Always false in template mode, where
+    // the generated struct has no user-written declaration.
+    bool IsRefLikeDeclaration,
     // Serialized location for deferred diagnostics
     DiagnosticLocation Location);
 

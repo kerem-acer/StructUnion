@@ -142,6 +142,30 @@ static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor RefStructFieldRequiresRefDeclaration = new(
+        id: "SU0018",
+        title: "Union carrying a ref struct field must be declared ref",
+        messageFormat: "Variant '{0}' has field '{1}' of type '{2}', which is a ref struct, so '{3}' must be declared as a 'readonly ref partial struct'. Adding 'ref' makes the type non-boxable and unusable as a field of a class or in a List<T>, which is why the generator will not add it for you.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor RefStructFieldNotComparable = new(
+        id: "SU0019",
+        title: "Ref struct field cannot be compared, so equality was not generated",
+        messageFormat: "Variant '{0}' has field '{1}' of type '{2}', which is a ref struct declaring neither 'operator ==' nor 'IEquatable<{2}>'. A ref struct cannot be a generic type argument, so there is no fallback comparison, and equality members were not generated for '{3}'. Add 'operator ==' or 'IEquatable<{2}>' to '{2}', or write the equality members yourself.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor NativeUnionWithRefStructField = new(
+        id: "SU0020",
+        title: "Native union interop is not supported for unions with ref struct fields",
+        messageFormat: "'{0}' sets NativeUnion = true but variant '{1}' has field '{2}' of type '{3}', which is a ref struct. The union contract exposes cases through a boxing 'object? Value', and a ref struct cannot be boxed; native union members were not generated. Remove the ref struct field or set NativeUnion = false.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static DiagnosticDescriptor GetById(string id) => id switch
     {
         "SU0001" => StructMustBePartial,
@@ -161,6 +185,9 @@ static class DiagnosticDescriptors
         "SU0015" => NativeUnionRequiresLanguageVersion,
         "SU0016" => NativeUnionWithCommonFields,
         "SU0017" => ReservedMemberName,
+        "SU0018" => RefStructFieldRequiresRefDeclaration,
+        "SU0019" => RefStructFieldNotComparable,
+        "SU0020" => NativeUnionWithRefStructField,
         _ => throw new ArgumentException($"Unknown diagnostic id: {id}", nameof(id))
     };
 }

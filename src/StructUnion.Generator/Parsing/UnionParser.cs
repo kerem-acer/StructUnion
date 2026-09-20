@@ -22,7 +22,8 @@ static class UnionParser
         TemplateSuffix: "Record",
         EnableImplicitConversions: true,
         NestedAccessors: false,
-        NativeUnion: false);
+        NativeUnion: false,
+        GenerateEquality: true);
 
     // ── Phase 1: Transform (per-type, cached by incremental generator) ──
 
@@ -67,6 +68,7 @@ static class UnionParser
         var effectiveSuffix = data.PerTypeSuffix ?? asm.TemplateSuffix ?? Defaults.TemplateSuffix;
         var generateDispose = data.PerTypeGenerateDispose ?? asm.GenerateDispose ?? false;
         var requestedNativeUnion = data.PerTypeNativeUnion ?? asm.NativeUnion ?? Defaults.NativeUnion;
+        var generateEquality = data.PerTypeGenerateEquality ?? asm.GenerateEquality ?? Defaults.GenerateEquality;
 
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = data.Location;
@@ -147,10 +149,19 @@ static class UnionParser
             nestedAccessors,
             generateDispose,
             nativeUnion,
-            nativeUnion && asm.HasIUnionType);
+            nativeUnion && asm.HasIUnionType,
+            generateEquality);
+
+        // Must abort: without `ref` on the declaration, every ref-like field is a CS8345 inside
+        // generated code, and the rest of the emitted members would pile more errors on top.
+        if (HasRefLikeFieldWithoutRefDeclaration(model, data.IsRefLikeDeclaration, location, diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
 
         CheckLargeStruct(model, location, diagnostics);
         ReportDisposableWithoutOptIn(model, location, diagnostics);
+        ReportRefLikeFieldNotComparable(model, location, diagnostics);
 
         return new ParseResult(model, diagnostics.ToImmutable().ToEquatableArray());
     }
@@ -163,7 +174,7 @@ static class UnionParser
         StructDeclarationSyntax syntax,
         CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion, perTypeGenerateEquality) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = syntax.Identifier.GetLocation();
 
@@ -278,6 +289,9 @@ static class UnionParser
             perTypeSuffix,
             perTypeGenerateDispose,
             perTypeNativeUnion,
+            perTypeGenerateEquality,
+            symbol.GetUserEqualityMembers(),
+            symbol.IsRefLikeType,
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -290,7 +304,7 @@ static class UnionParser
         INamedTypeSymbol symbol,
         CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion, perTypeGenerateEquality) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = ctx.TargetNode.GetLocation();
 
@@ -370,6 +384,12 @@ static class UnionParser
             perTypeSuffix,
             perTypeGenerateDispose,
             perTypeNativeUnion,
+            perTypeGenerateEquality,
+            // The template's own members belong to the template type, not to the generated struct,
+            // so nothing the user wrote there can collide with a generated equality member.
+            UserEquality: default,
+            // A record or class cannot hold a ref-like member, so a template can never need `ref`.
+            IsRefLikeDeclaration: false,
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -385,7 +405,8 @@ static class UnionParser
         bool nestedAccessors,
         bool generateDispose,
         bool nativeUnion,
-        bool implementIUnion)
+        bool implementIUnion,
+        bool generateEquality)
     {
         var variants = data.Variants.AsImmutableArray();
         var commonFields = data.CommonFields.AsImmutableArray();
@@ -421,7 +442,9 @@ static class UnionParser
             nativeUnion,
             implementIUnion,
             data.Mode == GenerationMode.RecordTemplate ? data.SymbolName : "",
-            data.TemplateTypeKeyword);
+            data.TemplateTypeKeyword,
+            generateEquality,
+            data.UserEquality);
     }
 
     static void ReportDisposableWithoutOptIn(
@@ -451,6 +474,126 @@ static class UnionParser
 
                     return; // one per type is enough
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reports SU0018 when a union carries a ref-like field but its declaration is not <c>ref</c>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately an error rather than silently emitting <c>ref</c> on the generator's own partial
+    /// declaration. That does work — the compiler merges the modifier across partials — but it would
+    /// silently make the user's type non-boxable, unusable as a field of a class and unusable in a
+    /// <c>List&lt;T&gt;</c>. Generation must abort: without the modifier every ref-like field is a
+    /// CS8345 inside generated code.
+    /// </remarks>
+    static bool HasRefLikeFieldWithoutRefDeclaration(
+        UnionModel model,
+        bool isRefLikeDeclaration,
+        DiagnosticLocation location,
+        ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        if (isRefLikeDeclaration || !model.HasAnyRefLikeField)
+        {
+            return false;
+        }
+
+        foreach (var variant in model.Variants)
+        {
+            foreach (var param in variant.Parameters)
+            {
+                if (param.IsRefLike)
+                {
+                    diagnostics.Add(
+                        DiagnosticInfo.Create(
+                            DiagnosticDescriptors.RefStructFieldRequiresRefDeclaration,
+                            location,
+                            variant.Name,
+                            param.Name,
+                            param.TypeFullyQualified,
+                            model.Name));
+
+                    return true;
+                }
+            }
+        }
+
+        // A ref-like common field with no ref-like variant parameter — only reachable in template
+        // mode, where a record cannot hold one, so this is defensive rather than expected.
+        foreach (var field in model.CommonFields)
+        {
+            if (field.IsRefLike)
+            {
+                diagnostics.Add(
+                    DiagnosticInfo.Create(
+                        DiagnosticDescriptors.RefStructFieldRequiresRefDeclaration,
+                        location,
+                        model.Name,
+                        field.Name,
+                        field.TypeFullyQualified,
+                        model.Name));
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Reports SU0019 when a ref-like field cannot be compared, so equality was skipped.
+    /// </summary>
+    /// <remarks>
+    /// Silent when the user wrote their own <c>Equals(Self)</c> — that is a valid remedy, so warning
+    /// about the field would be noise. Also silent when equality was turned off outright.
+    /// </remarks>
+    static void ReportRefLikeFieldNotComparable(
+        UnionModel model,
+        DiagnosticLocation location,
+        ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        if (!model.GenerateEquality
+            || model.UserEquality.DeclaresEqualsSelf
+            || model.AllFieldsComparable)
+        {
+            return;
+        }
+
+        foreach (var variant in model.Variants)
+        {
+            foreach (var param in variant.Parameters)
+            {
+                if (!param.IsComparable)
+                {
+                    diagnostics.Add(
+                        DiagnosticInfo.Create(
+                            DiagnosticDescriptors.RefStructFieldNotComparable,
+                            location,
+                            variant.Name,
+                            param.Name,
+                            param.TypeFullyQualified,
+                            model.Name));
+
+                    return; // one per type is enough
+                }
+            }
+        }
+
+        foreach (var field in model.CommonFields)
+        {
+            if (!field.IsComparable)
+            {
+                diagnostics.Add(
+                    DiagnosticInfo.Create(
+                        DiagnosticDescriptors.RefStructFieldNotComparable,
+                        location,
+                        model.Name,
+                        field.Name,
+                        field.TypeFullyQualified,
+                        model.Name));
+
+                return;
             }
         }
     }
@@ -538,6 +681,30 @@ static class UnionParser
                     data.CommonFields[0].Name));
 
             return false;
+        }
+
+        // Runs before BuildModel, so there is no UnionModel to ask — walk the extract directly.
+        // The union contract surfaces cases through a boxing `object? Value`, which a ref struct can
+        // never satisfy. Like the common-fields rule this is an error that still degrades rather than
+        // aborting: the user keeps a working union, just without the native members.
+        foreach (var variant in data.Variants)
+        {
+            foreach (var param in variant.Parameters)
+            {
+                if (param.IsRefLike)
+                {
+                    diagnostics.Add(
+                        DiagnosticInfo.Create(
+                            DiagnosticDescriptors.NativeUnionWithRefStructField,
+                            location,
+                            data.SymbolName,
+                            variant.Name,
+                            param.Name,
+                            param.TypeFullyQualified));
+
+                    return false;
+                }
+            }
         }
 
         return true;
@@ -789,6 +956,16 @@ static class UnionParser
     {
         var (fqn, size, alignment) = TypeClassifier.Classify(type);
         var (sync, asyncDisp) = type.ClassifyDisposable();
+
+        // A type parameter declared `allows ref struct` is ref-like for every purpose that matters
+        // here — it forces the union to be a ref struct and it cannot be a generic type argument.
+        var isRefLike = type.IsRefLikeType || type is ITypeParameterSymbol { AllowsRefLikeType: true };
+
+        // Only ref-like types need these; every other type has EqualityComparer<T>.Default to fall
+        // back on and can go straight into an interpolation hole.
+        var (eqOperator, equatableSelf) = isRefLike ? type.ClassifyEquality() : (false, false);
+        var overridesToString = isRefLike && type.OverridesToString();
+
         return new(
             name,
             fqn,
@@ -798,6 +975,10 @@ static class UnionParser
             size,
             alignment,
             sync,
-            asyncDisp);
+            asyncDisp,
+            isRefLike,
+            eqOperator,
+            equatableSelf,
+            overridesToString);
     }
 }

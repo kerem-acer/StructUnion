@@ -8,4 +8,5 @@ readonly record struct StructUnionOptions(
     string TemplateSuffix,
     bool EnableImplicitConversions,
     bool NestedAccessors,
-    bool NativeUnion);
+    bool NativeUnion,
+    bool GenerateEquality);

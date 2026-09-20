@@ -14,6 +14,14 @@ static class UnionEmitter
         sb.AppendLine("#pragma warning disable CS0282 // field ordering in partial struct");
         sb.AppendLine("#pragma warning disable CS0649 // field never assigned (Unsafe.AsRef)");
         sb.AppendLine("#pragma warning disable CS8618 // non-nullable field in [Obsolete] constructor");
+
+        // A ref-struct union marks Equals(object) [Obsolete(error)] — the Span<T> precedent — which
+        // trips CS0809 for overriding a non-obsolete member. The consuming project may well have
+        // TreatWarningsAsErrors, and the auto-generated header does not suppress compiler warnings.
+        if (model.HasAnyRefLikeField && model.EmitsEqualsObject)
+        {
+            sb.AppendLine("#pragma warning disable CS0809 // obsolete Equals(object) override, unreachable for a ref struct");
+        }
         sb.AppendLine();
 
         // Namespace
@@ -53,17 +61,22 @@ static class UnionEmitter
             typeParams = $"<{string.Join(", ", model.TypeParameters.Select(tp => tp.Name))}>";
         }
 
-        var interfaces = $"global::System.IEquatable<{model.TypeNameWithParameters}>";
+        var baseTypes = new List<string>();
+        if (model.ImplementsIEquatable)
+        {
+            baseTypes.Add($"global::System.IEquatable<{model.TypeNameWithParameters}>");
+        }
+
         if (model.GenerateDispose)
         {
             if (model.HasAnySyncDisposable)
             {
-                interfaces += ", global::System.IDisposable";
+                baseTypes.Add("global::System.IDisposable");
             }
 
             if (model.HasAnyAsyncDisposable)
             {
-                interfaces += ", global::System.IAsyncDisposable";
+                baseTypes.Add("global::System.IAsyncDisposable");
             }
         }
 
@@ -71,15 +84,23 @@ static class UnionEmitter
         {
             // The nested interface must be qualified here: names in a base list resolve in the
             // enclosing scope, not inside the type being declared.
-            interfaces += $", {model.FullyQualifiedName}.IUnionMembers";
+            baseTypes.Add($"{model.FullyQualifiedName}.IUnionMembers");
 
             if (model.ImplementIUnion)
             {
-                interfaces += ", global::System.Runtime.CompilerServices.IUnion";
+                baseTypes.Add("global::System.Runtime.CompilerServices.IUnion");
             }
         }
 
-        sb.AppendLine($"{model.Accessibility} readonly partial struct {model.Name}{typeParams} : {interfaces}");
+        // Equality can be suppressed entirely, which can leave nothing to inherit — so the colon
+        // has to be conditional rather than always printed.
+        var baseList = baseTypes.Count > 0 ? $" : {string.Join(", ", baseTypes)}" : "";
+
+        // A ref-like field forces the whole union to be a ref struct. The user must have written
+        // `ref` themselves (SU0018 otherwise), so this only mirrors their declaration.
+        var refModifier = model.HasAnyRefLikeField ? "ref " : "";
+
+        sb.AppendLine($"{model.Accessibility} readonly {refModifier}partial struct {model.Name}{typeParams}{baseList}");
 
         // Type parameter constraints
         foreach (var tp in model.TypeParameters)
@@ -122,8 +143,11 @@ static class UnionEmitter
         NativeUnionEmitter.EmitExplicitImplementations(sb, model);
 
         // Equality
-        EqualityEmitter.Emit(sb, model);
-        sb.AppendLine();
+        if (model.EmitsAnyEqualityMember)
+        {
+            EqualityEmitter.Emit(sb, model);
+            sb.AppendLine();
+        }
 
         // ToString
         ToStringEmitter.Emit(sb, model);

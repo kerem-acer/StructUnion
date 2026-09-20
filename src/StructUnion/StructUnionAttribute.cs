@@ -89,4 +89,20 @@ sealed class StructUnionAttribute : Attribute
     /// common fields (<c>SU0016</c>).</para>
     /// </remarks>
     public bool NativeUnion { get; set; }
+
+    /// <summary>
+    /// When true, the generated struct implements <see cref="IEquatable{T}"/> and gets
+    /// <c>Equals</c>, <c>GetHashCode</c>, <c>==</c> and <c>!=</c>. Set to false to suppress all of
+    /// them, either because the union is not a value you compare or because you are writing equality
+    /// yourself.
+    /// </summary>
+    /// <remarks>
+    /// <para>The effective default is <c>true</c> (not <c>false</c> as the C# property type suggests).
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// If omitted, falls back to assembly-level <see cref="StructUnionOptionsAttribute"/> or the default (true).</para>
+    /// <para>Suppressing a <em>single</em> member does not need this flag: declaring any of
+    /// <c>Equals</c>, <c>GetHashCode</c> or <c>operator ==</c> on your own partial declaration stops
+    /// the generator emitting that one, and the remaining generated members delegate to yours.</para>
+    /// </remarks>
+    public bool GenerateEquality { get; set; }
 }

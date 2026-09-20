@@ -1,0 +1,18 @@
+﻿{
+  Diagnostics: [
+    {
+      Location: : (3,35)-(3,38),
+      Message: Variant 'Some' has field 'value' of type 'T', which is a ref struct declaring neither 'operator ==' nor 'IEquatable<T>'. A ref struct cannot be a generic type argument, so there is no fallback comparison, and equality members were not generated for 'Box'. Add 'operator ==' or 'IEquatable<T>' to 'T', or write the equality members yourself.,
+      Severity: Warning,
+      WarningLevel: 1,
+      Descriptor: {
+        Id: SU0019,
+        Title: Ref struct field cannot be compared, so equality was not generated,
+        MessageFormat: Variant '{0}' has field '{1}' of type '{2}', which is a ref struct declaring neither 'operator ==' nor 'IEquatable<{2}>'. A ref struct cannot be a generic type argument, so there is no fallback comparison, and equality members were not generated for '{3}'. Add 'operator ==' or 'IEquatable<{2}>' to '{2}', or write the equality members yourself.,
+        Category: StructUnion,
+        DefaultSeverity: Warning,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}
