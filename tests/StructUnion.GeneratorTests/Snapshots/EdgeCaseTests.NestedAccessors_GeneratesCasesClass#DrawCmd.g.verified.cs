@@ -68,6 +68,13 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
                 X = x;
                 Y = y;
             }
+
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+            public void Deconstruct(out double x, out double y)
+            {
+                x = X;
+                y = Y;
+            }
         }
 
         public readonly struct LineTo
@@ -79,6 +86,13 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
             {
                 X = x;
                 Y = y;
+            }
+
+            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+            public void Deconstruct(out double x, out double y)
+            {
+                x = X;
+                y = Y;
             }
         }
 

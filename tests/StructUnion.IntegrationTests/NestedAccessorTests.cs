@@ -139,4 +139,34 @@ public class NestedAccessorTests
         var cmd = DrawCmd.MoveTo(1, 2);
         await Assert.That(cmd.ToString()).IsEqualTo("MoveTo(1, 2)");
     }
+
+    [Test]
+    public async Task CaseStruct_Deconstructs()
+    {
+        var (x, y) = DrawCmd.MoveTo(10, 20).AsMoveTo;
+
+        await Assert.That(x).IsEqualTo(10.0);
+        await Assert.That(y).IsEqualTo(20.0);
+    }
+
+    [Test]
+    public async Task CaseStruct_SupportsPositionalPattern()
+    {
+        var cmd = DrawCmd.LineTo(3, 4);
+
+        var length = cmd.TryGetLineTo(out var line) && line is (var x, var y)
+            ? Math.Sqrt((x * x) + (y * y))
+            : 0;
+
+        await Assert.That(length).IsEqualTo(5.0);
+    }
+
+    [Test]
+    public async Task CaseStruct_FromRecordTemplate_Deconstructs()
+    {
+        // A one-element deconstruction has no `var (x)` form, so call it directly.
+        Token.Identifier("total").AsIdentifier.Deconstruct(out var name);
+
+        await Assert.That(name).IsEqualTo("total");
+    }
 }
