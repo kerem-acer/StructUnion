@@ -9,4 +9,18 @@ readonly record struct AssemblyOptions(
     string? TemplateSuffix,
     bool? EnableImplicit,
     bool? NestedAccessors,
-    bool? GenerateDispose);
+    bool? GenerateDispose,
+    bool? NativeUnion,
+    // Compilation capabilities, projected here rather than through a second CompilationProvider
+    // node. All primitives, so the record's structural equality keeps the cache key stable.
+    bool HasUnionAttributeType,
+    bool HasIUnionType,
+    int LanguageVersion,
+    string LanguageVersionDisplay)
+{
+    /// <summary>C# 15, the version that introduced union types.</summary>
+    public const int UnionsLanguageVersion = 1500;
+
+    /// <summary>True if the effective language version enables union behaviours.</summary>
+    public bool LanguageSupportsUnions => LanguageVersion >= UnionsLanguageVersion;
+}

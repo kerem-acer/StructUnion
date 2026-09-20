@@ -11,7 +11,8 @@ public class UnionModelTests
         string name = "Shape",
         string[]? containingTypes = null,
         TypeParameterModel[]? typeParams = null,
-        FieldModel[]? commonFields = null) =>
+        FieldModel[]? commonFields = null,
+        bool nativeUnion = false) =>
         new(
             ns,
             (containingTypes ?? []).ToImmutableArray().ToEquatableArray(),
@@ -22,7 +23,7 @@ public class UnionModelTests
                     ImmutableArray.Create(new FieldModel("radius", "double", "public", true, true, 8, 8)).ToEquatableArray(),
                     1)).ToEquatableArray(),
             (commonFields ?? []).ToImmutableArray().ToEquatableArray(),
-            LayoutStrategy.Explicit, true, 8, 8, 16, 8, GenerationMode.PartialStruct, "Tag", false, false);
+            LayoutStrategy.Explicit, true, 8, 8, 16, 8, GenerationMode.PartialStruct, "Tag", false, false, nativeUnion, nativeUnion);
 
     [Test]
     public async Task HasCommonFields_Empty_ReturnsFalse()
@@ -121,4 +122,55 @@ public class UnionModelTests
         await Assert.That(model.TypeNameWithParameters).IsEqualTo("Result<TOk, TError>");
     }
 
+    [Test]
+    public async Task FullyQualifiedName_GlobalNamespace()
+    {
+        var model = MakeModel();
+        await Assert.That(model.FullyQualifiedName).IsEqualTo("global::Shape");
+    }
+
+    [Test]
+    public async Task FullyQualifiedName_WithNamespace()
+    {
+        var model = MakeModel(ns: "MyApp.Models");
+        await Assert.That(model.FullyQualifiedName).IsEqualTo("global::MyApp.Models.Shape");
+    }
+
+    [Test]
+    public async Task FullyQualifiedName_WithContainingTypes()
+    {
+        var model = MakeModel(ns: "MyApp", containingTypes: ["partial class Outer"]);
+        await Assert.That(model.FullyQualifiedName).IsEqualTo("global::MyApp.Outer.Shape");
+    }
+
+    [Test]
+    public async Task FullyQualifiedName_KeepsGenericArgumentsOfContainingType()
+    {
+        // Unlike the hint name, generic arguments must survive — they are part of the type name.
+        var model = MakeModel(ns: "MyApp", containingTypes: ["partial class Outer<T>"]);
+        await Assert.That(model.FullyQualifiedName).IsEqualTo("global::MyApp.Outer<T>.Shape");
+    }
+
+    [Test]
+    public async Task FullyQualifiedName_IncludesOwnTypeParameters()
+    {
+        var tp = new TypeParameterModel("T", ImmutableArray<string>.Empty.ToEquatableArray());
+        var model = MakeModel(ns: "MyApp", name: "Option", typeParams: [tp]);
+        await Assert.That(model.FullyQualifiedName).IsEqualTo("global::MyApp.Option<T>");
+    }
+
+    [Test]
+    public async Task NativeUnion_ParticipatesInEquality()
+    {
+        // UnionModel is the incremental generator's cache key; a new field that did not take part
+        // in structural equality would leave stale output cached when the option changed.
+        await Assert.That(MakeModel(nativeUnion: true)).IsNotEqualTo(MakeModel(nativeUnion: false));
+    }
+
+    [Test]
+    public async Task EmitCases_TrueWhenNativeUnion()
+    {
+        await Assert.That(MakeModel(nativeUnion: true).EmitCases).IsTrue();
+        await Assert.That(MakeModel(nativeUnion: false).EmitCases).IsFalse();
+    }
 }

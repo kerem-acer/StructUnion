@@ -54,4 +54,16 @@ sealed class StructUnionOptionsAttribute : Attribute
     /// Can be overridden per-type via <see cref="StructUnionAttribute.GenerateDispose"/>.
     /// </remarks>
     public bool GenerateDispose { get; set; }
+
+    /// <summary>
+    /// When true, generated structs are also C# 15 union types, gaining compiler-checked
+    /// <c>switch</c> exhaustiveness over their <c>Cases.{Variant}</c> case types.
+    /// </summary>
+    /// <remarks>
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// Can be overridden per-type via <see cref="StructUnionAttribute.NativeUnion"/>.
+    /// See <see cref="StructUnionAttribute.NativeUnion"/> for the requirements and for the
+    /// pattern-matching behaviour this changes.
+    /// </remarks>
+    public bool NativeUnion { get; set; }
 }

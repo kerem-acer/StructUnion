@@ -17,6 +17,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/StructUnion.GeneratorTests/StructUnion.GeneratorTests.csproj" />
     <Project Path="tests/StructUnion.IntegrationTests/StructUnion.IntegrationTests.csproj" />
+    <Project Path="tests/StructUnion.NativeUnionTests/StructUnion.NativeUnionTests.csproj" />
     <Project Path="tests/StructUnion.UnitTests/StructUnion.UnitTests.csproj" />
   </Folder>
 </Solution>

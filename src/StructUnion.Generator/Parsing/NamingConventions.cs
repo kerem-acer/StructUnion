@@ -16,7 +16,8 @@ static class NamingConventions
             return generatedName;
         }
 
-        if (suffix.Length > 0 && templateName.EndsWith(suffix) && templateName.Length > suffix.Length)
+        // Ordinal: a type-name suffix is an identifier, never culture-sensitive text.
+        if (suffix.Length > 0 && templateName.EndsWith(suffix, StringComparison.Ordinal) && templateName.Length > suffix.Length)
         {
             return templateName.Substring(0, templateName.Length - suffix.Length);
         }

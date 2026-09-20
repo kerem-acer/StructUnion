@@ -12,9 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # global.json pins an 11.0.1xx SDK, so a 10.x-only runner cannot even restore. 10.0.x is
+      # still needed for its runtime, to execute the net10.0 test projects.
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: |
+            10.0.x
+            11.0.x
           dotnet-quality: "preview"
           cache: true
           cache-dependency-path: "**/packages.lock.json"

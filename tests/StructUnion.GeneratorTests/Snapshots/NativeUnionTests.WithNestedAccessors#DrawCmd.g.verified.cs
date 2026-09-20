@@ -6,34 +6,31 @@
 #pragma warning disable CS8618 // non-nullable field in [Obsolete] constructor
 
 /// <summary>
-/// Struct union with 3 variants.
+/// Struct union with 2 variants.
 /// </summary>
 /// <remarks>
 /// <para><b>24 bytes</b> · align 8 · 7B padding</para>
 /// <code>
 /// @ 0.. 1  _tag         byte         1B
 /// @ 1.. 8  ---          padding      7B
-/// @ 8..16  x            double       8B  (LineTo)
 /// @ 8..16  x            double       8B  (MoveTo)
-/// @16..24  y            double       8B  (LineTo)
 /// @16..24  y            double       8B  (MoveTo)
 /// </code>
 /// <para><b>Variants</b></para>
 /// <code>
 /// MoveTo   16B
-/// LineTo   16B
 /// Close     0B
 /// </code>
 /// </remarks>
 [global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = 24)]
-public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
+[global::System.Runtime.CompilerServices.Union]
+public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>, global::DrawCmd.IUnionMembers, global::System.Runtime.CompilerServices.IUnion
 {
     public enum Tags : byte
     {
         Default = 0,
         MoveTo = 1,
-        LineTo = 2,
-        Close = 3,
+        Close = 2,
     }
 
     [global::System.Runtime.InteropServices.FieldOffset(0)]
@@ -48,13 +45,8 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     private readonly double _moveto_y;
 
-    [global::System.Runtime.InteropServices.FieldOffset(8)]
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    private readonly double _lineto_x;
-
-    [global::System.Runtime.InteropServices.FieldOffset(16)]
-    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    private readonly double _lineto_y;
+    private static readonly object s_boxed_close = new Cases.Close();
 
     public static class Cases
     {
@@ -77,25 +69,29 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
             }
         }
 
-        public readonly struct LineTo
+        public readonly struct Close
         {
-            public double X { get; }
-            public double Y { get; }
-
-            public LineTo(double x, double y)
-            {
-                X = x;
-                Y = y;
-            }
-
-            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-            public void Deconstruct(out double x, out double y)
-            {
-                x = X;
-                y = Y;
-            }
         }
 
+    }
+
+    /// <summary>C# 15 union member provider for the containing union. Generated; do not use directly.</summary>
+    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+    public interface IUnionMembers
+    {
+        object? Value { get; }
+
+        bool HasValue { get; }
+
+        bool TryGetValue(out Cases.MoveTo value);
+
+        bool TryGetValue(out Cases.Close value);
+
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static DrawCmd Create(Cases.MoveTo value) => global::DrawCmd.MoveTo(value.X, value.Y);
+
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static DrawCmd Create(Cases.Close value) => global::DrawCmd.Close();
     }
 
     [global::System.Obsolete("Use factory methods instead.", true)]
@@ -108,16 +104,6 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.MoveTo;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._moveto_x) = x;
         global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._moveto_y) = y;
-        return result;
-    }
-
-    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    public static partial DrawCmd LineTo(double x, double y)
-    {
-        var result = default(DrawCmd);
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.LineTo;
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._lineto_x) = x;
-        global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._lineto_y) = y;
         return result;
     }
 
@@ -136,7 +122,6 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
     public bool IsDefault => _tag == Tags.Default;
 
     public bool IsMoveTo => _tag == Tags.MoveTo;
-    public bool IsLineTo => _tag == Tags.LineTo;
     public bool IsClose => _tag == Tags.Close;
 
     public Cases.MoveTo AsMoveTo
@@ -146,15 +131,6 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         {
             if (_tag != Tags.MoveTo) ThrowInvalidCase(nameof(MoveTo));
             return new Cases.MoveTo(_moveto_x, _moveto_y);
-        }
-    }
-    public Cases.LineTo AsLineTo
-    {
-        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            if (_tag != Tags.LineTo) ThrowInvalidCase(nameof(LineTo));
-            return new Cases.LineTo(_lineto_x, _lineto_y);
         }
     }
 
@@ -170,62 +146,101 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         return false;
     }
 
-    public bool TryGetLineTo(out Cases.LineTo data)
-    {
-        if (_tag == Tags.LineTo)
-        {
-            data = new Cases.LineTo(_lineto_x, _lineto_y);
-            return true;
-        }
-
-        data = default;
-        return false;
-    }
-
     public bool TryGetClose() => _tag == Tags.Close;
 
-    public TResult Match<TResult>(global::System.Func<double, double, TResult> moveTo, global::System.Func<double, double, TResult> lineTo, global::System.Func<TResult> close)
+    public TResult Match<TResult>(global::System.Func<double, double, TResult> moveTo, global::System.Func<TResult> close)
     {
         return _tag switch
         {
             Tags.MoveTo => moveTo(_moveto_x, _moveto_y),
-            Tags.LineTo => lineTo(_lineto_x, _lineto_y),
             Tags.Close => close(),
             _ => ThrowUnknownTag<TResult>()
         };
     }
 
-    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, double, TResult> moveTo, global::System.Func<TState, double, double, TResult> lineTo, global::System.Func<TState, TResult> close)
+    public TResult Match<TState, TResult>(TState state, global::System.Func<TState, double, double, TResult> moveTo, global::System.Func<TState, TResult> close)
     {
         return _tag switch
         {
             Tags.MoveTo => moveTo(state, _moveto_x, _moveto_y),
-            Tags.LineTo => lineTo(state, _lineto_x, _lineto_y),
             Tags.Close => close(state),
             _ => ThrowUnknownTag<TResult>()
         };
     }
 
-    public void Match(global::System.Action<double, double> moveTo, global::System.Action<double, double> lineTo, global::System.Action close)
+    public void Match(global::System.Action<double, double> moveTo, global::System.Action close)
     {
         switch (_tag)
         {
             case Tags.MoveTo: moveTo(_moveto_x, _moveto_y); break;
-            case Tags.LineTo: lineTo(_lineto_x, _lineto_y); break;
             case Tags.Close: close(); break;
             default: ThrowUnknownTag(); break;
         }
     }
 
-    public void Match<TState>(TState state, global::System.Action<TState, double, double> moveTo, global::System.Action<TState, double, double> lineTo, global::System.Action<TState> close)
+    public void Match<TState>(TState state, global::System.Action<TState, double, double> moveTo, global::System.Action<TState> close)
     {
         switch (_tag)
         {
             case Tags.MoveTo: moveTo(state, _moveto_x, _moveto_y); break;
-            case Tags.LineTo: lineTo(state, _lineto_x, _lineto_y); break;
             case Tags.Close: close(state); break;
             default: ThrowUnknownTag(); break;
         }
+    }
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private object? GetUnionValue()
+    {
+        switch (_tag)
+        {
+            case Tags.MoveTo: return new Cases.MoveTo(_moveto_x, _moveto_y);
+            case Tags.Close: return s_boxed_close;
+            default: return null;
+        }
+    }
+
+    object? global::DrawCmd.IUnionMembers.Value
+    {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        get => GetUnionValue();
+    }
+
+    object? global::System.Runtime.CompilerServices.IUnion.Value
+    {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        get => GetUnionValue();
+    }
+
+    bool global::DrawCmd.IUnionMembers.HasValue
+    {
+        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        get => _tag != Tags.Default;
+    }
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    bool global::DrawCmd.IUnionMembers.TryGetValue(out Cases.MoveTo value)
+    {
+        if (_tag == Tags.MoveTo)
+        {
+            value = new Cases.MoveTo(_moveto_x, _moveto_y);
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    bool global::DrawCmd.IUnionMembers.TryGetValue(out Cases.Close value)
+    {
+        if (_tag == Tags.Close)
+        {
+            value = default;
+            return true;
+        }
+
+        value = default;
+        return false;
     }
 
     public bool Equals(DrawCmd other)
@@ -234,7 +249,6 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         return _tag switch
         {
             Tags.MoveTo => _moveto_x.Equals(other._moveto_x) && _moveto_y.Equals(other._moveto_y),
-            Tags.LineTo => _lineto_x.Equals(other._lineto_x) && _lineto_y.Equals(other._lineto_y),
             Tags.Close => true,
             _ => true
         };
@@ -247,7 +261,6 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         return _tag switch
         {
             Tags.MoveTo => global::System.HashCode.Combine(_tag, _moveto_x, _moveto_y),
-            Tags.LineTo => global::System.HashCode.Combine(_tag, _lineto_x, _lineto_y),
             Tags.Close => global::System.HashCode.Combine(_tag),
             _ => _tag.GetHashCode()
         };
@@ -261,7 +274,6 @@ public readonly partial struct DrawCmd : global::System.IEquatable<DrawCmd>
         return _tag switch
         {
             Tags.MoveTo => $"MoveTo({_moveto_x}, {_moveto_y})",
-            Tags.LineTo => $"LineTo({_lineto_x}, {_lineto_y})",
             Tags.Close => "Close",
             Tags.Default => "Default",
             _ => "<invalid>"

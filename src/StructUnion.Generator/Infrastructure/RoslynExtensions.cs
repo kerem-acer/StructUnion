@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using StructUnion.Generator.Models;
 
 #pragma warning disable RS1024 // Symbols should be compared for equality
@@ -83,7 +84,7 @@ static class RoslynExtensions
         return result.ToImmutable().ToEquatableArray();
     }
 
-    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose)
+    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose, bool? NativeUnion)
         GetStructUnionAttributeProps(this GeneratorAttributeSyntaxContext ctx)
     {
         bool? enableImplicit = null;
@@ -92,6 +93,7 @@ static class RoslynExtensions
         bool? nestedAccessors = null;
         string? suffix = null;
         bool? generateDispose = null;
+        bool? nativeUnion = null;
 
         foreach (var attr in ctx.Attributes)
         {
@@ -119,11 +121,14 @@ static class RoslynExtensions
                     case nameof(StructUnionAttribute.GenerateDispose) when named.Value.Value is bool dispose:
                         generateDispose = dispose;
                         break;
+                    case nameof(StructUnionAttribute.NativeUnion) when named.Value.Value is bool native:
+                        nativeUnion = native;
+                        break;
                 }
             }
         }
 
-        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose);
+        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose, nativeUnion);
     }
 
     /// <summary>
@@ -139,6 +144,7 @@ static class RoslynExtensions
         bool? enableImplicit = null;
         bool? nestedAccessors = null;
         bool? generateDispose = null;
+        bool? nativeUnion = null;
 
         foreach (var attr in compilation.Assembly.GetAttributes())
         {
@@ -163,12 +169,51 @@ static class RoslynExtensions
                         case nameof(StructUnionOptionsAttribute.GenerateDispose) when named.Value.Value is bool dispose:
                             generateDispose = dispose;
                             break;
+                        case nameof(StructUnionOptionsAttribute.NativeUnion) when named.Value.Value is bool native:
+                            nativeUnion = native;
+                            break;
                     }
                 }
             }
         }
 
-        return new AssemblyOptions(tagPropertyName, templateSuffix, enableImplicit, nestedAccessors, generateDispose);
+        var languageVersion = compilation is CSharpCompilation csharp
+            ? (int)csharp.LanguageVersion
+            : 0;
+
+        return new AssemblyOptions(
+            tagPropertyName,
+            templateSuffix,
+            enableImplicit,
+            nestedAccessors,
+            generateDispose,
+            nativeUnion,
+            HasPublicType(compilation, "System.Runtime.CompilerServices.UnionAttribute"),
+            HasPublicType(compilation, "System.Runtime.CompilerServices.IUnion"),
+            languageVersion,
+            compilation is CSharpCompilation cs ? LanguageVersionFacts.ToDisplayString(cs.LanguageVersion) : "unknown");
+    }
+
+    /// <summary>
+    /// True if the compilation can see a public type with this metadata name.
+    /// </summary>
+    /// <remarks>
+    /// Uses the plural lookup deliberately. <c>GetTypeByMetadataName</c> returns null when the
+    /// name is ambiguous across assemblies, which is exactly what happens when a project both
+    /// targets net11.0 and carries a UnionAttribute polyfill — reporting "missing" for a type
+    /// that is present twice would be actively wrong.
+    /// </remarks>
+    static bool HasPublicType(Compilation compilation, string metadataName)
+    {
+        foreach (var type in compilation.GetTypesByMetadataName(metadataName))
+        {
+            if (type.DeclaredAccessibility == Accessibility.Public)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

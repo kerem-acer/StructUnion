@@ -66,4 +66,27 @@ sealed class StructUnionAttribute : Attribute
     /// When false and a variant carries a disposable field, the generator reports <c>SU0013</c>.
     /// </remarks>
     public bool GenerateDispose { get; set; }
+
+    /// <summary>
+    /// When true, the generated struct is also a C# 15 union type: it carries
+    /// <c>[System.Runtime.CompilerServices.Union]</c> and an <c>IUnionMembers</c> provider whose
+    /// case types are the generated <c>Cases.{Variant}</c> structs. Native <c>switch</c>
+    /// expressions over those case types are then checked for exhaustiveness by the compiler,
+    /// and matched without boxing.
+    /// </summary>
+    /// <remarks>
+    /// <para>The effective default is <c>false</c>.
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// If omitted, falls back to assembly-level <see cref="StructUnionOptionsAttribute"/> or the default (false).</para>
+    /// <para><b>Enabling this changes how patterns bind to the union.</b> Patterns applied to a
+    /// value of the union type unwrap to its contents, so <c>x is Shape</c> becomes a compile
+    /// error and <c>x is { Tag: Shape.Tags.Circle }</c> starts matching the contents rather than
+    /// the union. That is why it is opt-in.</para>
+    /// <para>Requires a target framework that provides
+    /// <c>System.Runtime.CompilerServices.UnionAttribute</c> (net11.0 or later, or a polyfill) and
+    /// <c>&lt;LangVersion&gt;preview&lt;/LangVersion&gt;</c>; otherwise the generator reports
+    /// <c>SU0014</c> or <c>SU0015</c> and omits the union members. Not supported together with
+    /// common fields (<c>SU0016</c>).</para>
+    /// </remarks>
+    public bool NativeUnion { get; set; }
 }
