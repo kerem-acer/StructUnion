@@ -29,12 +29,36 @@ readonly record struct UnionModel(
     string TagPropertyName,
     bool NestedAccessors,
     bool GenerateDispose,
+    bool NativeUnion,
+    bool ImplementIUnion,
     string TemplateTypeName = "",
     string TemplateTypeKeyword = "")
 {
     public bool HasCommonFields => CommonFields.Count > 0;
 
     public string TagField => "_tag";
+
+    /// <summary>
+    /// True if the nested <c>Cases</c> class is emitted. Native union mode needs it for its case
+    /// types, so it is emitted there even when <see cref="NestedAccessors"/> is off.
+    /// </summary>
+    public bool EmitCases => NestedAccessors || NativeUnion;
+
+    /// <summary>True if any variant carries no fields (so its case struct is empty).</summary>
+    public bool HasAnyZeroParameterVariant
+    {
+        get
+        {
+            foreach (var v in Variants)
+            {
+                if (v.Parameters.Count == 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 
     /// <summary>True if any variant carries a field whose type implements IDisposable or IAsyncDisposable.</summary>
     public bool HasAnyDisposable
@@ -112,6 +136,14 @@ readonly record struct UnionModel(
     /// <summary>Pre-computed type name with generic parameters for declarations.</summary>
     public string TypeNameWithParameters { get; } = BuildTypeNameWithParameters(Name, TypeParameters);
 
+    /// <summary>
+    /// Pre-computed <c>global::</c>-qualified name including namespace, containing types and
+    /// generic arguments — e.g. <c>global::MyApp.Outer&lt;T&gt;.Shape</c>. Used where generated
+    /// code must name the union itself and cannot rely on simple-name lookup.
+    /// </summary>
+    public string FullyQualifiedName { get; } =
+        BuildFullyQualifiedName(Namespace, ContainingTypes, Name, TypeParameters);
+
     static string BuildFullHintName(string ns, EquatableArray<string> containingTypes, string name)
     {
         var prefix = ns.Length > 0 ? $"{ns}." : "";
@@ -128,6 +160,23 @@ readonly record struct UnionModel(
         }
 
         return $"{prefix}{name}";
+    }
+
+    static string BuildFullyQualifiedName(
+        string ns,
+        EquatableArray<string> containingTypes,
+        string name,
+        EquatableArray<TypeParameterModel> typeParameters)
+    {
+        var prefix = ns.Length > 0 ? $"global::{ns}." : "global::";
+        foreach (var ct in containingTypes)
+        {
+            // Entries look like "partial class Outer<T>"; take everything after the last keyword.
+            // Unlike the hint name, the generic arguments are kept — they are part of the type name.
+            prefix += $"{ct.Substring(ct.LastIndexOf(' ') + 1)}.";
+        }
+
+        return $"{prefix}{BuildTypeNameWithParameters(name, typeParameters)}";
     }
 
     static string BuildTypeNameWithParameters(string name, EquatableArray<TypeParameterModel> typeParameters)

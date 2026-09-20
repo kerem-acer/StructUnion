@@ -229,4 +229,25 @@ public class ShapeTests
 
         await Assert.That(name).IsEqualTo("circle");
     }
+
+    /// <summary>
+    /// Containment test for the NativeUnion opt-in. Becoming a C# 15 union type makes patterns
+    /// unwrap to the union's contents, which would turn `is Shape` into a compile error and
+    /// repoint the property pattern below at those contents. A union that has not opted in must
+    /// keep matching as an ordinary struct, forever.
+    /// </summary>
+    [Test]
+    public async Task WithoutNativeUnion_PatternsMatchTheStructItself()
+    {
+        var shape = Shape.Circle(5.0);
+
+        // The tautology is the point: for an ordinary struct this is "always true", whereas on a
+        // union type the pattern would test the union's *contents* and fail to compile entirely.
+#pragma warning disable CS0183, IDE0150 // expression is always of the provided type
+        await Assert.That(shape is Shape).IsTrue();
+#pragma warning restore CS0183, IDE0150
+
+        await Assert.That(shape is { Tag: Shape.Tags.Circle }).IsTrue();
+        await Assert.That(shape is { IsCircle: true, CircleRadius: 5.0 }).IsTrue();
+    }
 }

@@ -7,4 +7,5 @@ readonly record struct StructUnionOptions(
     string TagPropertyName,
     string TemplateSuffix,
     bool EnableImplicitConversions,
-    bool NestedAccessors);
+    bool NestedAccessors,
+    bool NativeUnion);

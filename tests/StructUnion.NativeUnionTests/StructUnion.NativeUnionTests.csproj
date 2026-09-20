@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/StructUnion/StructUnion.csproj" />
+
+    <!-- Runs the generator over this project's own source. The P2P form makes the build-order
+         dependency explicit, rather than reaching into the generator's bin directory by path. -->
+    <ProjectReference Include="../../src/StructUnion.Generator/StructUnion.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

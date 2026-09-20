@@ -14,7 +14,9 @@ static class CasesEmitter
         {
             foreach (var variant in model.Variants)
             {
-                if (variant.Parameters.Count == 0)
+                // A native union needs a case type for every variant, including the empty ones.
+                // Nested-accessor mode has no use for an empty struct, so it keeps skipping them.
+                if (variant.Parameters.Count == 0 && !model.NativeUnion)
                 {
                     continue;
                 }
@@ -29,6 +31,17 @@ static class CasesEmitter
 
     static void EmitVariantStruct(SourceBuilder sb, VariantModel variant)
     {
+        // An empty variant carries nothing, so it needs no constructor and nothing to deconstruct.
+        if (variant.Parameters.Count == 0)
+        {
+            sb.AppendLine($"public readonly struct {variant.Name}");
+            using (sb.Block())
+            {
+            }
+
+            return;
+        }
+
         sb.AppendLine($"public readonly struct {variant.Name}");
         using (sb.Block())
         {

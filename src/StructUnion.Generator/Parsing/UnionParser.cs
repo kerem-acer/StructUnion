@@ -21,7 +21,8 @@ static class UnionParser
         TagPropertyName: "Tag",
         TemplateSuffix: "Record",
         EnableImplicitConversions: true,
-        NestedAccessors: false);
+        NestedAccessors: false,
+        NativeUnion: false);
 
     // ── Phase 1: Transform (per-type, cached by incremental generator) ──
 
@@ -65,9 +66,15 @@ static class UnionParser
         var nestedAccessors = data.PerTypeNested ?? asm.NestedAccessors ?? Defaults.NestedAccessors;
         var effectiveSuffix = data.PerTypeSuffix ?? asm.TemplateSuffix ?? Defaults.TemplateSuffix;
         var generateDispose = data.PerTypeGenerateDispose ?? asm.GenerateDispose ?? false;
+        var requestedNativeUnion = data.PerTypeNativeUnion ?? asm.NativeUnion ?? Defaults.NativeUnion;
 
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = data.Location;
+
+        // Must run before the reserved-name checks: whether 'Cases' and 'IUnionMembers' are
+        // reserved depends on the *effective* native-union flag, not the requested one.
+        var nativeUnion = ResolveNativeUnion(data, asm, requestedNativeUnion, location, diagnostics);
+        var emitCases = nestedAccessors || nativeUnion;
 
         // Derive struct name (for template mode)
         var structName = data.Mode == GenerationMode.RecordTemplate ? NamingConventions.DeriveStructName(data.SymbolName, data.GeneratedName, effectiveSuffix) : data.SymbolName;
@@ -102,7 +109,19 @@ static class UnionParser
         if (HasReservedVariantName(
             data.Variants,
             data.SymbolName,
-            nestedAccessors,
+            emitCases,
+            nativeUnion,
+            location,
+            diagnostics))
+        {
+            return new ParseResult(null, diagnostics.ToImmutable().ToEquatableArray());
+        }
+
+        if (HasReservedCommonFieldName(
+            data.CommonFields,
+            data.SymbolName,
+            emitCases,
+            nativeUnion,
             location,
             diagnostics))
         {
@@ -126,7 +145,9 @@ static class UnionParser
             enableImplicit,
             tagPropertyName,
             nestedAccessors,
-            generateDispose);
+            generateDispose,
+            nativeUnion,
+            nativeUnion && asm.HasIUnionType);
 
         CheckLargeStruct(model, location, diagnostics);
         ReportDisposableWithoutOptIn(model, location, diagnostics);
@@ -142,7 +163,7 @@ static class UnionParser
         StructDeclarationSyntax syntax,
         CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = syntax.Identifier.GetLocation();
 
@@ -256,6 +277,7 @@ static class UnionParser
             perTypeNested,
             perTypeSuffix,
             perTypeGenerateDispose,
+            perTypeNativeUnion,
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -268,7 +290,7 @@ static class UnionParser
         INamedTypeSymbol symbol,
         CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = ctx.TargetNode.GetLocation();
 
@@ -347,6 +369,7 @@ static class UnionParser
             perTypeNested,
             perTypeSuffix,
             perTypeGenerateDispose,
+            perTypeNativeUnion,
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -360,7 +383,9 @@ static class UnionParser
         bool enableImplicit,
         string tagPropertyName,
         bool nestedAccessors,
-        bool generateDispose)
+        bool generateDispose,
+        bool nativeUnion,
+        bool implementIUnion)
     {
         var variants = data.Variants.AsImmutableArray();
         var commonFields = data.CommonFields.AsImmutableArray();
@@ -393,6 +418,8 @@ static class UnionParser
             tagPropertyName,
             nestedAccessors,
             generateDispose,
+            nativeUnion,
+            implementIUnion,
             data.Mode == GenerationMode.RecordTemplate ? data.SymbolName : "",
             data.TemplateTypeKeyword);
     }
@@ -456,21 +483,116 @@ static class UnionParser
         return false;
     }
 
+    /// <summary>
+    /// Resolves whether native union members can actually be emitted, reporting SU0014/15/16.
+    /// </summary>
+    /// <remarks>
+    /// The two availability rules are warnings rather than errors on purpose. A library that
+    /// multi-targets declares <c>NativeUnion = true</c> once and compiles it for every target
+    /// framework, most of which have no UnionAttribute; an error would make that impossible.
+    /// Common fields are a hard error instead, because there is no honest way to round-trip them
+    /// through a single-parameter Create.
+    /// </remarks>
+    static bool ResolveNativeUnion(
+        TypeExtract data,
+        AssemblyOptions asm,
+        bool requested,
+        DiagnosticLocation location,
+        ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        if (!requested)
+        {
+            return false;
+        }
+
+        if (!asm.HasUnionAttributeType)
+        {
+            diagnostics.Add(
+                DiagnosticInfo.Create(
+                    DiagnosticDescriptors.NativeUnionNotSupportedByTarget,
+                    location,
+                    data.SymbolName));
+
+            return false;
+        }
+
+        if (!asm.LanguageSupportsUnions)
+        {
+            diagnostics.Add(
+                DiagnosticInfo.Create(
+                    DiagnosticDescriptors.NativeUnionRequiresLanguageVersion,
+                    location,
+                    data.SymbolName,
+                    asm.LanguageVersionDisplay));
+
+            return false;
+        }
+
+        if (data.CommonFields.Count > 0)
+        {
+            diagnostics.Add(
+                DiagnosticInfo.Create(
+                    DiagnosticDescriptors.NativeUnionWithCommonFields,
+                    location,
+                    data.SymbolName,
+                    data.CommonFields[0].Name));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool HasReservedCommonFieldName(
+        EquatableArray<FieldModel> commonFields,
+        string typeName,
+        bool emitCases,
+        bool nativeUnion,
+        DiagnosticLocation location,
+        ImmutableArray<DiagnosticInfo>.Builder diagnostics)
+    {
+        foreach (var field in commonFields)
+        {
+            if (IsGeneratedNestedTypeName(field.Name, emitCases, nativeUnion))
+            {
+                diagnostics.Add(
+                    DiagnosticInfo.Create(
+                        DiagnosticDescriptors.ReservedMemberName,
+                        location,
+                        field.Name,
+                        typeName));
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // The comparer is load-bearing: variant names are matched case-insensitively.
     static readonly HashSet<string> ReservedVariantNames = new(
         ["Default", "Tags"],
         StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// True if the name collides with a nested type the generator is about to emit. Nested types
+    /// and members share one declaration space, so such a collision is a CS0102 in generated code.
+    /// </summary>
+    static bool IsGeneratedNestedTypeName(string name, bool emitCases, bool nativeUnion) =>
+        (emitCases && string.Equals(name, "Cases", StringComparison.OrdinalIgnoreCase))
+        || (nativeUnion && string.Equals(name, "IUnionMembers", StringComparison.OrdinalIgnoreCase));
+
     static bool HasReservedVariantName(
         EquatableArray<VariantModel> variants,
         string typeName,
-        bool nestedAccessors,
+        bool emitCases,
+        bool nativeUnion,
         DiagnosticLocation location,
         ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
         foreach (var variant in variants)
         {
-            if (ReservedVariantNames.Contains(variant.Name) || (nestedAccessors && string.Equals(variant.Name, "Cases", StringComparison.OrdinalIgnoreCase)))
+            if (ReservedVariantNames.Contains(variant.Name) || IsGeneratedNestedTypeName(variant.Name, emitCases, nativeUnion))
             {
                 diagnostics.Add(
                     DiagnosticInfo.Create(

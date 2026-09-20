@@ -39,6 +39,13 @@ static class UnionEmitter
             sb.AppendLine($"[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Explicit, Size = {model.TotalSize})]");
         }
 
+        // Makes the struct a union type as far as the compiler is concerned. Must be paired with a
+        // well-formed IUnionMembers provider, or the compiler errors at the declaration.
+        if (model.NativeUnion)
+        {
+            sb.AppendLine("[global::System.Runtime.CompilerServices.Union]");
+        }
+
         // Struct declaration
         var typeParams = "";
         if (model.TypeParameters.Count > 0)
@@ -60,6 +67,18 @@ static class UnionEmitter
             }
         }
 
+        if (model.NativeUnion)
+        {
+            // The nested interface must be qualified here: names in a base list resolve in the
+            // enclosing scope, not inside the type being declared.
+            interfaces += $", {model.FullyQualifiedName}.IUnionMembers";
+
+            if (model.ImplementIUnion)
+            {
+                interfaces += ", global::System.Runtime.CompilerServices.IUnion";
+            }
+        }
+
         sb.AppendLine($"{model.Accessibility} readonly partial struct {model.Name}{typeParams} : {interfaces}");
 
         // Type parameter constraints
@@ -77,10 +96,13 @@ static class UnionEmitter
         FieldEmitter.Emit(sb, model);
         sb.AppendLine();
 
-        // Variant case structs (when nested accessors enabled)
-        if (model.NestedAccessors)
+        NativeUnionEmitter.EmitBoxedCaseFields(sb, model);
+
+        // Variant case structs (nested accessors, and the case types of a native union)
+        if (model.EmitCases)
         {
             CasesEmitter.Emit(sb, model);
+            NativeUnionEmitter.EmitMemberProviderInterface(sb, model);
         }
 
         // Factory methods
@@ -95,6 +117,9 @@ static class UnionEmitter
 
         // Implicit conversions
         EmitImplicitConversions(sb, model);
+
+        // C# 15 union members (opt-in)
+        NativeUnionEmitter.EmitExplicitImplementations(sb, model);
 
         // Equality
         EqualityEmitter.Emit(sb, model);
