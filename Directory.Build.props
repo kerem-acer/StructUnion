@@ -9,10 +9,23 @@
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <!-- The SDK derives AnalysisLevel and WarningLevel from the TFM major, so a net11.0 leg
+             would get 11.0 / 11 while every other leg stays at 10. Combined with .globalconfig's
+             `dotnet_analyzer_diagnostic.severity = error` baseline and TreatWarningsAsErrors, that
+             silently turns every rule and warning wave newly enabled in .NET 11 into a build error
+             on one TFM only. Pin both so every TFM sees the same rule set and raising it is an
+             explicit, reviewable change. -->
+        <AnalysisLevel>10.0</AnalysisLevel>
+        <WarningLevel>10</WarningLevel>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true' Or '$(TF_BUILD)' == 'true'">
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+
+        <!-- Without this, a plain `dotnet restore` silently rewrites a stale lock file instead of
+             failing, so CI can go green against a lock that does not match the csproj. -->
+        <RestoreLockedMode>true</RestoreLockedMode>
     </PropertyGroup>
 
     <!-- The SDK discovers .globalconfig by walking every directory above each source file. A git
