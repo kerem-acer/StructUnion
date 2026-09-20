@@ -20,3 +20,14 @@ SU0010 | StructUnion | Error | GeneratedName and TemplateSuffix cannot both be s
 SU0011 | StructUnion | Error | Variant name is reserved
 SU0012 | StructUnion | Error | Invalid C# identifier
 SU0013 | StructUnion | Warning | Variant field is disposable but GenerateDispose is not enabled
+
+## Release 0.2.0
+
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+SU0014 | StructUnion | Warning | Native union interop requires .NET 11 or a UnionAttribute polyfill
+SU0015 | StructUnion | Warning | Native union interop requires C# 15 or later
+SU0016 | StructUnion | Error | Native union interop is not supported for unions with common fields
+SU0017 | StructUnion | Error | Member name conflicts with a generated nested type
