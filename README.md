@@ -9,8 +9,9 @@ A C# source generator that creates zero-allocation discriminated unions (tagged 
 - **Rich generated API** — factory methods, `Is*` checks, property accessors, `TryGet*`, `Match`, equality operators, and `ToString`
 - **Implicit conversions** — single-parameter variants with unique types get implicit conversion operators
 - **Tag enum** — generates a nested `Tags` enum for use with `switch` expressions
-- **Compile-time diagnostics** — 12 analyzer rules (SU0001–SU0012) catch mistakes at build time
-- **Wide compatibility** — targets netstandard2.0, netstandard2.1, net6.0, net8.0, and net10.0
+- **Native C# 15 unions (net11.0)** — opt in with `[StructUnion(NativeUnion = true)]` to get compiler-checked `switch` exhaustiveness with **no boxing**, unlike the language's own `union` declaration
+- **Compile-time diagnostics** — 17 analyzer rules (SU0001–SU0017) catch mistakes at build time
+- **Wide compatibility** — targets netstandard2.0, netstandard2.1, net6.0, net8.0, net10.0, and net11.0
 
 ## Quick Start
 
@@ -311,6 +312,79 @@ await using var r = Resource.File(asyncDisposable);
 
 Can be set assembly-wide via `[assembly: StructUnionOptions(GenerateDispose = true)]`.
 
+### Native C# 15 Unions
+
+C# 15 (.NET 11) lets any type opt into being a *union type*, gaining implicit conversions from
+each case type and **compiler-checked `switch` exhaustiveness**. The language's own `union`
+declaration pays for that with allocation — it stores a single `object?`, so every value-type case
+is boxed on entry. StructUnion gives you the same language behaviour on top of its packed,
+explicit-layout storage, with no boxing at all.
+
+Set `NativeUnion = true`:
+
+```csharp
+[StructUnion(NativeUnion = true)]
+public readonly partial struct Shape
+{
+    public static partial Shape Circle(double radius);
+    public static partial Shape Rectangle(double length, double width);
+    public static partial Shape Empty();
+}
+```
+
+Each variant gets a case type under `Cases`. Import them with `using static` so switch arms read
+as bare names:
+
+```csharp
+using static MyApp.Shape.Cases;
+
+var area = shape switch      // exhaustive — no `_` arm, and no allocation
+{
+    Circle c                         => Math.PI * c.Radius * c.Radius,
+    Rectangle(var length, var width) => length * width,
+    Empty                            => 0,
+    null                             => 0,
+};
+
+Shape s = new Rectangle(2, 3);       // implicit union conversion
+if (shape is Circle circle) { ... }
+```
+
+Add a variant later and every incomplete `switch` in your codebase becomes a compiler warning.
+Everything StructUnion already generates — `Match`, `TryGet*`, `Tag`, equality, `ToString`,
+`Dispose` — keeps working alongside it.
+
+| | `union` keyword | `[StructUnion(NativeUnion = true)]` |
+|---|---|---|
+| Storage | one `object?` | explicit layout, overlapping fields |
+| Value-type cases | boxed on entry | stored inline, never boxed |
+| Pattern matching | reads `Value` (boxes) | calls `TryGetValue` (no box, no defensive copy) |
+| Exhaustiveness checking | yes | yes |
+| Case types | existing types you name | generated `Cases.{Variant}`, one per variant |
+
+**Handle `default`.** Every case type is a non-nullable struct, so the compiler considers a switch
+over all of them exhaustive and will *not* ask you for a `null` arm. But `default(Shape)` has no
+active variant, and matches `null` — so without that arm it throws `SwitchExpressionException` at
+runtime. Add `null => ...` (as above) or guard with `IsDefault` wherever a default instance can
+reach the switch. This mirrors the existing `Match()` behaviour, which throws on `default` too.
+
+**Opting in changes how patterns bind.** A union type's patterns unwrap to its contents, so
+`shape is Shape` becomes a compile error and `shape is { Tag: Shape.Tags.Circle }` starts matching
+the contents rather than the union. That is why the flag is off by default; unions that have not
+opted in are unaffected.
+
+**Requirements.** The consuming project must target `net11.0` (or provide a `UnionAttribute`
+polyfill) and set `<LangVersion>preview</LangVersion>`. Otherwise the generator reports `SU0014` or
+`SU0015` — warnings, not errors, so a multi-targeting library can set the flag once:
+
+```xml
+<NoWarn Condition="'$(TargetFramework)' != 'net11.0'">$(NoWarn);SU0014</NoWarn>
+```
+
+Not supported together with common fields — a case type cannot carry them, so `Create` and `Value`
+would silently drop them (`SU0016`). Can be set assembly-wide via
+`[assembly: StructUnionOptions(NativeUnion = true)]`.
+
 ### Assembly-Level Defaults
 
 Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes override these when set:
@@ -321,7 +395,8 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
     TagPropertyName = "Kind",             // default tag property name for all unions
     EnableImplicitConversions = false,    // disable implicit conversions project-wide
     NestedAccessors = true,               // enable nested accessors project-wide
-    GenerateDispose = true)]              // generate Dispose/DisposeAsync where applicable
+    GenerateDispose = true,               // generate Dispose/DisposeAsync where applicable
+    NativeUnion = true)]                  // emit C# 15 union members (net11.0)
 ```
 
 ## Diagnostics
@@ -341,6 +416,10 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
 | SU0011 | Error | Variant name is reserved (conflicts with generated `Tags` enum) |
 | SU0012 | Error | Invalid C# identifier for `GeneratedName` or `TagPropertyName` |
 | SU0013 | Warning | Variant field is disposable but `GenerateDispose` is not enabled |
+| SU0014 | Warning | `NativeUnion` requires a target framework providing `UnionAttribute` (net11.0+) |
+| SU0015 | Warning | `NativeUnion` requires C# 15 (`<LangVersion>preview</LangVersion>`) |
+| SU0016 | Error | `NativeUnion` is not supported for unions with common fields |
+| SU0017 | Error | Member name conflicts with a generated nested type (`Cases`, `IUnionMembers`) |
 
 ## How It Works
 
@@ -357,8 +436,14 @@ When the generator cannot determine field sizes at compile time — generic type
 
 ## Requirements
 
-- .NET SDK 10.0 or later (for building and testing)
-- Consumers of the NuGet package can target netstandard2.0+, net6.0+, net8.0+, or net10.0+
+- **Building this repo:** .NET SDK 11.0.100-rc.1 or later, pinned in `global.json`. SDKs install
+  side by side, so existing .NET 10 installs are unaffected, and `rollForward: latestFeature`
+  picks up the 11.0 GA SDK automatically when it ships. Running the test suite also needs the
+  .NET 10 runtime, because three of the four test projects target `net10.0`.
+- **Consumers:** target netstandard2.0+, netstandard2.1+, net6.0+, net8.0+, net10.0+, or net11.0+.
+- **`NativeUnion` mode:** requires the consuming project to target `net11.0` and set
+  `<LangVersion>preview</LangVersion>`. On any earlier target the generator reports `SU0014` and
+  generates the standard API without the union members.
 
 ## Building
 
@@ -376,6 +461,7 @@ dotnet test
 dotnet test tests/StructUnion.UnitTests
 dotnet test tests/StructUnion.GeneratorTests
 dotnet test tests/StructUnion.IntegrationTests
+dotnet test tests/StructUnion.NativeUnionTests
 ```
 
 The test suite includes:
@@ -383,6 +469,8 @@ The test suite includes:
 - **Unit tests** — parsing, layout calculation, type classification, naming conventions
 - **Generator tests** — snapshot-based verification of generated code using [Verify](https://github.com/VerifyTests/Verify)
 - **Integration tests** — end-to-end functional tests exercising the generated API
+- **Native union tests** — a `net11.0` project that compiles real C# 15 `switch` expressions over
+  generated unions, so a missing arm fails the build, and asserts that matching allocates 0 bytes
 
 ## License
 
