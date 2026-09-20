@@ -10,7 +10,8 @@ A C# source generator that creates zero-allocation discriminated unions (tagged 
 - **Implicit conversions** — single-parameter variants with unique types get implicit conversion operators
 - **Tag enum** — generates a nested `Tags` enum for use with `switch` expressions
 - **Native C# 15 unions (net11.0)** — opt in with `[StructUnion(NativeUnion = true)]` to get compiler-checked `switch` exhaustiveness with **no boxing**, unlike the language's own `union` declaration
-- **Compile-time diagnostics** — 17 analyzer rules (SU0001–SU0017) catch mistakes at build time
+- **`ref struct` fields** — variants can carry `Span<T>`, `ReadOnlySpan<T>`, or any `ref struct`, with ref safety preserved through the generated factories
+- **Compile-time diagnostics** — 20 analyzer rules (SU0001–SU0020) catch mistakes at build time
 - **Wide compatibility** — targets netstandard2.0, netstandard2.1, net6.0, net8.0, net10.0, and net11.0
 
 ## Quick Start
