@@ -23,7 +23,8 @@ static class UnionParser
         EnableImplicitConversions: true,
         NestedAccessors: false,
         NativeUnion: false,
-        GenerateEquality: true);
+        GenerateEquality: true,
+        AllowParameterlessConstructor: false);
 
     // ── Phase 1: Transform (per-type, cached by incremental generator) ──
 
@@ -69,6 +70,7 @@ static class UnionParser
         var generateDispose = data.PerTypeGenerateDispose ?? asm.GenerateDispose ?? false;
         var requestedNativeUnion = data.PerTypeNativeUnion ?? asm.NativeUnion ?? Defaults.NativeUnion;
         var generateEquality = data.PerTypeGenerateEquality ?? asm.GenerateEquality ?? Defaults.GenerateEquality;
+        var allowParameterlessConstructor = data.PerTypeAllowParameterlessConstructor ?? asm.AllowParameterlessConstructor ?? Defaults.AllowParameterlessConstructor;
 
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = data.Location;
@@ -150,7 +152,8 @@ static class UnionParser
             generateDispose,
             nativeUnion,
             nativeUnion && asm.HasIUnionType,
-            generateEquality);
+            generateEquality,
+            allowParameterlessConstructor);
 
         // Must abort: without `ref` on the declaration, every ref-like field is a CS8345 inside
         // generated code, and the rest of the emitted members would pile more errors on top.
@@ -174,7 +177,7 @@ static class UnionParser
         StructDeclarationSyntax syntax,
         CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion, perTypeGenerateEquality) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion, perTypeGenerateEquality, perTypeAllowParameterlessConstructor) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = syntax.Identifier.GetLocation();
 
@@ -290,6 +293,7 @@ static class UnionParser
             perTypeGenerateDispose,
             perTypeNativeUnion,
             perTypeGenerateEquality,
+            perTypeAllowParameterlessConstructor,
             symbol.GetUserEqualityMembers(),
             symbol.IsRefLikeType,
             DiagnosticLocation.From(location));
@@ -304,7 +308,7 @@ static class UnionParser
         INamedTypeSymbol symbol,
         CancellationToken ct)
     {
-        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion, perTypeGenerateEquality) = ctx.GetStructUnionAttributeProps();
+        var (perTypeImplicit, generatedName, perTypeTag, perTypeNested, perTypeSuffix, perTypeGenerateDispose, perTypeNativeUnion, perTypeGenerateEquality, perTypeAllowParameterlessConstructor) = ctx.GetStructUnionAttributeProps();
         var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
         var location = ctx.TargetNode.GetLocation();
 
@@ -385,6 +389,7 @@ static class UnionParser
             perTypeGenerateDispose,
             perTypeNativeUnion,
             perTypeGenerateEquality,
+            perTypeAllowParameterlessConstructor,
             // The template's own members belong to the template type, not to the generated struct,
             // so nothing the user wrote there can collide with a generated equality member.
             UserEquality: default,
@@ -406,7 +411,8 @@ static class UnionParser
         bool generateDispose,
         bool nativeUnion,
         bool implementIUnion,
-        bool generateEquality)
+        bool generateEquality,
+        bool allowParameterlessConstructor)
     {
         var variants = data.Variants.AsImmutableArray();
         var commonFields = data.CommonFields.AsImmutableArray();
@@ -444,7 +450,8 @@ static class UnionParser
             data.Mode == GenerationMode.RecordTemplate ? data.SymbolName : "",
             data.TemplateTypeKeyword,
             generateEquality,
-            data.UserEquality);
+            data.UserEquality,
+            allowParameterlessConstructor);
     }
 
     static void ReportDisposableWithoutOptIn(

@@ -9,9 +9,13 @@ static class FactoryEmitter
 
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
-        sb.AppendLine("[global::System.Obsolete(\"Use factory methods instead.\", true)]");
-        sb.AppendLine($"public {model.Name}() {{ }}");
-        sb.AppendLine();
+        // Opting out leaves the implicit struct constructor, so `new T()` is just `default(T)`.
+        if (!model.AllowParameterlessConstructor)
+        {
+            sb.AppendLine("[global::System.Obsolete(\"Use factory methods instead.\", true)]");
+            sb.AppendLine($"public {model.Name}() {{ }}");
+            sb.AppendLine();
+        }
 
         foreach (var variant in model.Variants)
         {

@@ -9,4 +9,5 @@ readonly record struct StructUnionOptions(
     bool EnableImplicitConversions,
     bool NestedAccessors,
     bool NativeUnion,
-    bool GenerateEquality);
+    bool GenerateEquality,
+    bool AllowParameterlessConstructor);

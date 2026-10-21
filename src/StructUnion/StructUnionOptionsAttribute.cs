@@ -76,4 +76,14 @@ sealed class StructUnionOptionsAttribute : Attribute
     /// Can be overridden per-type via <see cref="StructUnionAttribute.GenerateEquality"/>.
     /// </remarks>
     public bool GenerateEquality { get; set; }
+
+    /// <summary>
+    /// When true, generated structs do not get the <c>[Obsolete(error: true)]</c> parameterless
+    /// constructor, so <c>new T()</c> compiles and is the same as <c>default(T)</c>.
+    /// </summary>
+    /// <remarks>
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// Can be overridden per-type via <see cref="StructUnionAttribute.AllowParameterlessConstructor"/>.
+    /// </remarks>
+    public bool AllowParameterlessConstructor { get; set; }
 }

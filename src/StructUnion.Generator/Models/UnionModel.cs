@@ -34,7 +34,8 @@ readonly record struct UnionModel(
     string TemplateTypeName = "",
     string TemplateTypeKeyword = "",
     bool GenerateEquality = true,
-    UserEqualityMembers UserEquality = default)
+    UserEqualityMembers UserEquality = default,
+    bool AllowParameterlessConstructor = false)
 {
     public bool HasCommonFields => CommonFields.Count > 0;
 

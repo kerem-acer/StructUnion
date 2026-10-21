@@ -491,6 +491,43 @@ Not supported together with common fields — a case type cannot carry them, so 
 would silently drop them (`SU0016`). Can be set assembly-wide via
 `[assembly: StructUnionOptions(NativeUnion = true)]`.
 
+### Parameterless Constructor
+
+Every union gets a `public Shape()` constructor marked `[Obsolete(error: true)]`, so `new Shape()`
+fails to compile and points you at the factory methods. Some generated code needs that constructor
+to exist anyway. The System.Text.Json source generator is the usual case: for any union reachable
+from a `[JsonSerializable]` type, it emits `ObjectCreator = () => new Shape()`. It does that even
+when a converter registered at runtime (`options.Converters`) handles the union's JSON and the
+creator never runs, and the build fails:
+
+```
+error CS0619: 'Shape.Shape()' is obsolete: 'Use factory methods instead.'
+```
+
+An error-level obsolete cannot be suppressed, and declaring your own parameterless constructor
+collides with the generated one (`CS0111`). Set `AllowParameterlessConstructor = true` to stop
+generating it:
+
+```csharp
+[StructUnion(AllowParameterlessConstructor = true)]
+public readonly partial struct SchemaOrRef
+{
+    public static partial SchemaOrRef Inline(string schema);
+    public static partial SchemaOrRef Ref(string artifact);
+}
+
+public sealed record Product { public SchemaOrRef? Credentials { get; init; } }
+
+[JsonSerializable(typeof(Product))]
+partial class ModelJsonContext : JsonSerializerContext;   // compiles now
+```
+
+`new SchemaOrRef()` then compiles and is the same as `default(SchemaOrRef)`: `IsDefault` is `true`
+and no variant is active. If you can put `[JsonConverter(typeof(...))]` on the union itself, you
+don't need the flag: the source generator sees the converter at compile time and never emits the
+creator. Can be set assembly-wide via
+`[assembly: StructUnionOptions(AllowParameterlessConstructor = true)]`.
+
 ### Assembly-Level Defaults
 
 Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes override these when set:
@@ -503,7 +540,8 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
     NestedAccessors = true,               // enable nested accessors project-wide
     GenerateDispose = true,               // generate Dispose/DisposeAsync where applicable
     NativeUnion = true,                   // emit C# 15 union members (net11.0)
-    GenerateEquality = false)]            // suppress Equals/GetHashCode/==/!= project-wide
+    GenerateEquality = false,             // suppress Equals/GetHashCode/==/!= project-wide
+    AllowParameterlessConstructor = true)] // let `new T()` compile (System.Text.Json source gen)
 ```
 
 ## Diagnostics
