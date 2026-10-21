@@ -92,7 +92,7 @@ static class RoslynExtensions
         return result.ToImmutable().ToEquatableArray();
     }
 
-    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose, bool? NativeUnion, bool? GenerateEquality)
+    public static (bool? EnableImplicit, string? GeneratedName, string? TagPropertyName, bool? NestedAccessors, string? TemplateSuffix, bool? GenerateDispose, bool? NativeUnion, bool? GenerateEquality, bool? AllowParameterlessConstructor)
         GetStructUnionAttributeProps(this GeneratorAttributeSyntaxContext ctx)
     {
         bool? enableImplicit = null;
@@ -103,6 +103,7 @@ static class RoslynExtensions
         bool? generateDispose = null;
         bool? nativeUnion = null;
         bool? generateEquality = null;
+        bool? allowParameterlessConstructor = null;
 
         foreach (var attr in ctx.Attributes)
         {
@@ -136,11 +137,14 @@ static class RoslynExtensions
                     case nameof(StructUnionAttribute.GenerateEquality) when named.Value.Value is bool equality:
                         generateEquality = equality;
                         break;
+                    case nameof(StructUnionAttribute.AllowParameterlessConstructor) when named.Value.Value is bool allowCtor:
+                        allowParameterlessConstructor = allowCtor;
+                        break;
                 }
             }
         }
 
-        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose, nativeUnion, generateEquality);
+        return (enableImplicit, generatedName, tagPropertyName, nestedAccessors, suffix, generateDispose, nativeUnion, generateEquality, allowParameterlessConstructor);
     }
 
     /// <summary>
@@ -158,6 +162,7 @@ static class RoslynExtensions
         bool? generateDispose = null;
         bool? nativeUnion = null;
         bool? generateEquality = null;
+        bool? allowParameterlessConstructor = null;
 
         foreach (var attr in compilation.Assembly.GetAttributes())
         {
@@ -188,6 +193,9 @@ static class RoslynExtensions
                         case nameof(StructUnionOptionsAttribute.GenerateEquality) when named.Value.Value is bool equality:
                             generateEquality = equality;
                             break;
+                        case nameof(StructUnionOptionsAttribute.AllowParameterlessConstructor) when named.Value.Value is bool allowCtor:
+                            allowParameterlessConstructor = allowCtor;
+                            break;
                     }
                 }
             }
@@ -205,6 +213,7 @@ static class RoslynExtensions
             generateDispose,
             nativeUnion,
             generateEquality,
+            allowParameterlessConstructor,
             HasPublicType(compilation, "System.Runtime.CompilerServices.UnionAttribute"),
             HasPublicType(compilation, "System.Runtime.CompilerServices.IUnion"),
             languageVersion,

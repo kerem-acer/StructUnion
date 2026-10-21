@@ -33,6 +33,7 @@ readonly record struct TypeExtract(
     bool? PerTypeGenerateDispose,
     bool? PerTypeNativeUnion,
     bool? PerTypeGenerateEquality,
+    bool? PerTypeAllowParameterlessConstructor,
     // Equality members the user already declared, so the generator can skip exactly those.
     // Always default in template mode.
     UserEqualityMembers UserEquality,

@@ -105,4 +105,21 @@ sealed class StructUnionAttribute : Attribute
     /// the generator emitting that one, and the remaining generated members delegate to yours.</para>
     /// </remarks>
     public bool GenerateEquality { get; set; }
+
+    /// <summary>
+    /// When true, the generator does not emit the <c>[Obsolete(error: true)]</c> parameterless
+    /// constructor, so <c>new T()</c> compiles and produces the same value as <c>default(T)</c>
+    /// (<c>IsDefault</c> is <c>true</c>).
+    /// </summary>
+    /// <remarks>
+    /// <para>The effective default is <c>false</c>.
+    /// Only participates in the options cascade when explicitly set in the attribute declaration.
+    /// If omitted, falls back to assembly-level <see cref="StructUnionOptionsAttribute"/> or the default (false).</para>
+    /// <para>Needed when code you do not control must call the constructor to compile. The
+    /// System.Text.Json source generator is the common case: a union reachable from a
+    /// <c>JsonSerializable</c> type gets an <c>ObjectCreator</c> of <c>new T()</c> even when a
+    /// converter registered at runtime handles its JSON, and an error-level obsolete
+    /// (<c>CS0619</c>) cannot be suppressed.</para>
+    /// </remarks>
+    public bool AllowParameterlessConstructor { get; set; }
 }
