@@ -100,6 +100,35 @@ public static class GeneratorTestHelper
             + string.Join(Environment.NewLine, errors.Select(d => $"  {d.Id}: {d.GetMessage()} @ {d.Location.GetLineSpan()}")));
     }
 
+    /// <summary>
+    /// Runs the generator, emits the result, and returns the assembly image.
+    /// </summary>
+    /// <remarks>
+    /// For assertions about what reaches metadata, which the compilation itself cannot answer: source
+    /// symbols still report a <c>[Conditional]</c> attribute that emit then drops.
+    /// </remarks>
+    public static byte[] EmitGenerated(string source, params string[] preprocessorSymbols)
+    {
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols);
+
+        CreateDriver(parseOptions)
+            .RunGeneratorsAndUpdateCompilation(
+                BuildCompilation(source, includeUnionRuntime: false, parseOptions),
+                out var updated,
+                out _);
+
+        using var image = new MemoryStream();
+        var result = updated.Emit(image);
+        if (!result.Success)
+        {
+            throw new InvalidOperationException(
+                "Emit failed:" + Environment.NewLine
+                + string.Join(Environment.NewLine, result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)));
+        }
+
+        return image.ToArray();
+    }
+
     static CSharpGeneratorDriver CreateDriver(CSharpParseOptions parseOptions) =>
         CSharpGeneratorDriver.Create(
             [new StructUnionGenerator().AsSourceGenerator()],

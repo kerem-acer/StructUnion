@@ -19,10 +19,33 @@ A C# source generator that creates zero-allocation discriminated unions (tagged 
 Add the NuGet package:
 
 ```xml
-<PackageReference Include="StructUnion" Version="*" />
+<PackageReference Include="StructUnion" Version="*" PrivateAssets="all" />
 ```
 
-The source generator is bundled inside the package and activates automatically.
+The source generator is bundled inside the package and activates automatically. StructUnion is
+needed only at build time: `[StructUnion]` and `[StructUnionOptions]` are left out of your compiled
+assembly, and the generated code does not reference `StructUnion.dll`. `PrivateAssets="all"` keeps
+the package from flowing to projects that reference yours.
+
+To keep the attributes in metadata, for example to find unions by reflection, define
+`STRUCTUNION_KEEP_ATTRIBUTES`. Then drop `PrivateAssets`, because `StructUnion.dll` is a runtime
+dependency again:
+
+```xml
+<DefineConstants>$(DefineConstants);STRUCTUNION_KEEP_ATTRIBUTES</DefineConstants>
+```
+
+**`netstandard2.0` libraries.** There, the generated code gets `System.HashCode` and `Unsafe` from
+the `Microsoft.Bcl.HashCode` and `System.Runtime.CompilerServices.Unsafe` packages. `PrivateAssets="all"`
+stops those flowing too, so reference them directly, or the generated `GetHashCode` throws
+`FileNotFoundException` in projects that use your library:
+
+```xml
+<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
+  <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+</ItemGroup>
+```
 
 Define a union:
 

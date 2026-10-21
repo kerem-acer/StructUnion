@@ -1,6 +1,18 @@
+using System.Diagnostics;
+
 namespace StructUnion;
 
+/// <summary>
+/// Marks a <c>readonly partial struct</c> or a record/class template for union generation.
+/// </summary>
+/// <remarks>
+/// The generator reads this attribute from source, and the generated code never references it, so
+/// the compiler leaves it out of the compiled assembly. That keeps <c>StructUnion.dll</c> a build-time
+/// dependency only. Define <c>STRUCTUNION_KEEP_ATTRIBUTES</c> to keep it in metadata, for example
+/// to find unions by reflection.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, Inherited = false)]
+[Conditional("STRUCTUNION_KEEP_ATTRIBUTES")]
 #if STRUCT_UNION_GENERATOR
 internal
 #else
