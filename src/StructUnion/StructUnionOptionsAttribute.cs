@@ -1,10 +1,17 @@
+using System.Diagnostics;
+
 namespace StructUnion;
 
 /// <summary>
 /// Assembly-level attribute to configure default options for StructUnion source generation.
 /// Per-type <see cref="StructUnionAttribute"/> values take precedence over these defaults.
 /// </summary>
+/// <remarks>
+/// Like <see cref="StructUnionAttribute"/>, left out of the compiled assembly unless
+/// <c>STRUCTUNION_KEEP_ATTRIBUTES</c> is defined.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Assembly)]
+[Conditional("STRUCTUNION_KEEP_ATTRIBUTES")]
 #if STRUCT_UNION_GENERATOR
 internal
 #else
