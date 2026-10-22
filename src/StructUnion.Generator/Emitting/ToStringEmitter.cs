@@ -24,7 +24,7 @@ static class ToStringEmitter
 
                 var parts = variant.Parameters.Select(p =>
                 {
-                    var field = variant.FieldName(p.Name);
+                    var field = model.FieldAccess(variant, p);
 
                     // A ref-like type with no ToString() override of its own cannot be rendered at
                     // all: the inherited object.ToString() would box the receiver. Name the field

@@ -49,7 +49,7 @@ static class FactoryEmitter
         using (sb.Block())
         {
             sb.AppendLine($"var result = default({model.TypeNameWithParameters});");
-            sb.AppendLine($"global::System.Runtime.CompilerServices.Unsafe.AsRef(in result._tag) = Tags.{variant.Name};");
+            sb.AppendLine($"global::System.Runtime.CompilerServices.Unsafe.AsRef(in result.{model.TagField}) = Tags.{variant.Name};");
 
             if (model.Mode == GenerationMode.RecordTemplate)
             {
@@ -61,7 +61,7 @@ static class FactoryEmitter
 
             foreach (var param in variant.Parameters)
             {
-                var field = variant.FieldName(param.Name);
+                var field = model.FieldAccess(variant, param);
                 sb.AppendLine($"global::System.Runtime.CompilerServices.Unsafe.AsRef(in result.{field}) = {CSharpIdentifiers.ToCamelCase(param.Name)};");
             }
 

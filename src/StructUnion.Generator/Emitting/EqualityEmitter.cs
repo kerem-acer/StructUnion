@@ -99,7 +99,7 @@ static class EqualityEmitter
 
                 var comparisons = variant.Parameters.Select(p =>
                 {
-                    var fn = variant.FieldName(p.Name);
+                    var fn = model.FieldAccess(variant, p);
                     return EmitFieldComparison(fn, fn, p);
                 });
                 sb.AppendLine($"Tags.{variant.Name} => {string.Join(" && ", comparisons)},");
@@ -187,7 +187,7 @@ static class EqualityEmitter
                         {
                             foreach (var param in hashableParameters[variant.Name])
                             {
-                                sb.AppendLine($"hash.Add({variant.FieldName(param.Name)});");
+                                sb.AppendLine($"hash.Add({model.FieldAccess(variant, param)});");
                             }
 
                             sb.AppendLine("break;");
@@ -211,7 +211,7 @@ static class EqualityEmitter
 
                     foreach (var param in hashableParameters[variant.Name])
                     {
-                        hashParts.Add(variant.FieldName(param.Name));
+                        hashParts.Add(model.FieldAccess(variant, param));
                     }
 
                     sb.AppendLine($"Tags.{variant.Name} => global::System.HashCode.Combine({string.Join(", ", hashParts)}),");

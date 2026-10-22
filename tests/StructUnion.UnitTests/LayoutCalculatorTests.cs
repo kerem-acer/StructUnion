@@ -14,7 +14,7 @@ public class LayoutCalculatorTests
             ("Circle", MakeFields(("radius", "double", true, 8, 8))),
             ("Rect", MakeFields(("w", "double", true, 8, 8), ("h", "double", true, 8, 8))));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: false);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Explicit);
     }
 
@@ -25,7 +25,7 @@ public class LayoutCalculatorTests
             ("Text", MakeFields(("value", "string", false, 8, 8))),
             ("Num", MakeFields(("value", "int", true, 4, 4))));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: false);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Explicit);
     }
 
@@ -35,7 +35,7 @@ public class LayoutCalculatorTests
         var variants = MakeVariants(
             ("Some", MakeFields(("value", "T", true, -1, -1))));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: true);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
     }
 
@@ -270,16 +270,17 @@ public class LayoutCalculatorTests
     }
 
     [Test]
-    public async Task DetermineStrategy_ManagedValueType_ReturnsAuto()
+    public async Task DetermineStrategy_ManagedValueTypeOnly_ReturnsAuto()
     {
         // A managed value type (value type containing references, e.g. ValueTuple<string, int>)
-        // cannot participate in explicit overlapping layout.
+        // cannot participate in explicit overlapping layout, and with nothing else to overlap
+        // there is no point in nested storage.
         var managedStructField = new FieldModel("t", "ValueTuple<string, int>", "public",
             IsValueType: true, IsUnmanaged: false, Size: 16, Alignment: 8);
         var variants = ImmutableArray.Create(
             new VariantModel("A", ImmutableArray.Create(managedStructField).ToEquatableArray(), 1));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: false);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
     }
 
@@ -295,7 +296,7 @@ public class LayoutCalculatorTests
         var variants = ImmutableArray.Create(
             new VariantModel("A", ImmutableArray.Create(refStructField).ToEquatableArray(), 1));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, []);
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: false);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
     }
 
@@ -310,7 +311,7 @@ public class LayoutCalculatorTests
         var variants = MakeVariants(
             ("A", MakeFields(("x", "int", true, 4, 4))));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, common);
+        var result = LayoutCalculator.DetermineStrategy(variants, common, isGeneric: false);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
     }
 
@@ -321,8 +322,158 @@ public class LayoutCalculatorTests
         var variants = MakeVariants(
             ("A", MakeFields(("x", "int", true, 4, 4))));
 
-        var result = LayoutCalculator.DetermineStrategy(variants, common);
+        var result = LayoutCalculator.DetermineStrategy(variants, common, isGeneric: true);
         await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
+    }
+
+    [Test]
+    public async Task DetermineStrategy_GenericWithKnownSizes_ReturnsAuto()
+    {
+        // The CLR refuses explicit layout on a generic type even when no field mentions a type
+        // parameter: "generic types cannot have explicit layout".
+        var variants = MakeVariants(
+            ("Items", MakeFields(("items", "List<T>", false, 8, 8))),
+            ("Text", MakeFields(("s", "string", false, 8, 8))));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: true);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Auto);
+    }
+
+    [Test]
+    public async Task DetermineStrategy_ManagedValueTypeBesideOverlappingCases_ReturnsHybrid()
+    {
+        var variants = ImmutableArray.Create(
+            new VariantModel("A", MakeFields(("a", "string", false, 8, 8)).ToEquatableArray(), 1),
+            new VariantModel("B", MakeFields(("b", "string", false, 8, 8)).ToEquatableArray(), 2),
+            new VariantModel("E", ImmutableArray.Create(ManagedStruct("names", 8)).ToEquatableArray(), 3));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: false);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Hybrid);
+    }
+
+    [Test]
+    public async Task DetermineStrategy_UnknownSizeInNonGenericUnion_ReturnsHybrid()
+    {
+        // An error type — say, the struct a record template is about to generate — has no size the
+        // generator can see, so it goes beside the storage struct rather than into it.
+        var variants = MakeVariants(
+            ("A", MakeFields(("a", "string", false, 8, 8))),
+            ("P", MakeFields(("p", "Pair", false, -1, -1))));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, [], isGeneric: false);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Hybrid);
+    }
+
+    [Test]
+    public async Task DetermineStrategy_ManagedCommonField_ReturnsHybrid()
+    {
+        var common = new FieldModel[] { ManagedStruct("pair", 16) };
+        var variants = MakeVariants(
+            ("A", MakeFields(("x", "int", true, 4, 4))),
+            ("B", MakeFields(("s", "string", false, 8, 8))));
+
+        var result = LayoutCalculator.DetermineStrategy(variants, common, isGeneric: false);
+        await Assert.That(result).IsEqualTo(LayoutStrategy.Hybrid);
+    }
+
+    [Test]
+    public async Task Plan_Hybrid_OverlapsOnlyStorageFields()
+    {
+        // Four string cases share one slot in storage; the managed struct sits beside it.
+        var variants = ImmutableArray.Create(
+            new VariantModel("A", MakeFields(("a", "string", false, 8, 8)).ToEquatableArray(), 1),
+            new VariantModel("B", MakeFields(("b", "string", false, 8, 8)).ToEquatableArray(), 2),
+            new VariantModel("C", MakeFields(("c", "string", false, 8, 8)).ToEquatableArray(), 3),
+            new VariantModel("D", MakeFields(("d", "string", false, 8, 8)).ToEquatableArray(), 4),
+            new VariantModel("E", ImmutableArray.Create(ManagedStruct("names", 8)).ToEquatableArray(), 5));
+
+        var plan = LayoutCalculator.Plan(variants, [], isGeneric: false);
+
+        await Assert.That(plan.Strategy).IsEqualTo(LayoutStrategy.Hybrid);
+        await Assert.That(plan.RefZoneOffset).IsEqualTo(8);
+        await Assert.That(plan.TotalSize).IsEqualTo(16);       // storage: tag + one shared slot
+        await Assert.That(plan.EstimatedSize).IsEqualTo(24);   // storage + Names
+        await Assert.That(plan.HoldsReferences).IsTrue();
+    }
+
+    [Test]
+    public async Task Plan_Hybrid_CommonFieldsStayOutOfStorage()
+    {
+        // In storage the decimal would push the ref zone to 24; beside it, storage is tag + string.
+        var common = new FieldModel[] { new("amount", "decimal", "public", true, true, 16, 8) };
+        var variants = ImmutableArray.Create(
+            new VariantModel("A", MakeFields(("a", "string", false, 8, 8)).ToEquatableArray(), 1),
+            new VariantModel("E", ImmutableArray.Create(ManagedStruct("names", 8)).ToEquatableArray(), 2));
+
+        var plan = LayoutCalculator.Plan(variants, common, isGeneric: false);
+
+        await Assert.That(plan.TotalSize).IsEqualTo(16);
+        await Assert.That(plan.EstimatedSize).IsEqualTo(40); // storage 16 + decimal 16 + Names 8
+    }
+
+    [Test]
+    public async Task Plan_Auto_WithoutReferences_FollowsDeclarationOrder()
+    {
+        // A struct without references keeps its declaration order:
+        // tag @0, a @1, b @4, c @8 → 9, rounded to 12.
+        var variants = MakeVariants(
+            ("A", MakeFields(("a", "byte", true, 1, 1))),
+            ("B", MakeFields(("b", "int", true, 4, 4))),
+            ("C", MakeFields(("c", "byte", true, 1, 1))));
+
+        var plan = LayoutCalculator.Plan(variants, [], isGeneric: true);
+
+        await Assert.That(plan.Strategy).IsEqualTo(LayoutStrategy.Auto);
+        await Assert.That(plan.EstimatedSize).IsEqualTo(12);
+        await Assert.That(plan.EstimatedAlignment).IsEqualTo(4);
+        await Assert.That(plan.HoldsReferences).IsFalse();
+    }
+
+    [Test]
+    public async Task Plan_Auto_CountsEveryCase()
+    {
+        // Sequential fields sit side by side: 9 strings + the tag, not just the largest case.
+        var variants = MakeVariants(
+            [.. Enumerable.Range(0, 9).Select(i => ($"V{i}", MakeFields(("s", "string", false, 8, 8))))]);
+
+        var plan = LayoutCalculator.Plan(variants, [], isGeneric: true);
+
+        await Assert.That(plan.EstimatedSize).IsEqualTo(80);
+    }
+
+    [Test]
+    public async Task Plan_UnknownSize_EstimatesNothing()
+    {
+        var variants = MakeVariants(
+            ("Some", MakeFields(("value", "T", true, -1, -1))));
+
+        var plan = LayoutCalculator.Plan(variants, [], isGeneric: true);
+
+        await Assert.That(plan.EstimatedSize).IsEqualTo(-1);
+    }
+
+    [Test]
+    public async Task ComputeVariantFieldOffset_SkipsFieldsOutsideStorage()
+    {
+        // The managed struct before the int is not in storage, so it takes no room in the value zone.
+        var variant = new VariantModel("A", ImmutableArray.Create(
+            ManagedStruct("names", 8),
+            new FieldModel("n", "int", "public", true, true, 4, 4)).ToEquatableArray(), 1);
+
+        await Assert.That(LayoutCalculator.ComputeVariantFieldOffset(variant, 1, refZoneOffset: 8, valueZoneOffset: 4))
+            .IsEqualTo(4);
+    }
+
+    [Test]
+    [Arguments("string", false, false, 8, false, true)]
+    [Arguments("int", true, true, 4, false, true)]
+    [Arguments("ValueTuple<string, int>", true, false, 16, false, false)]
+    [Arguments("Plain", true, true, 4, true, false)]
+    [Arguments("Pair", false, false, -1, false, false)]
+    public async Task CanOverlap(string type, bool isValueType, bool isUnmanaged, int size, bool isRefLike, bool expected)
+    {
+        var field = new FieldModel("x", type, "public", isValueType, isUnmanaged, size, size, IsRefLike: isRefLike);
+        await Assert.That(LayoutCalculator.CanOverlap(field)).IsEqualTo(expected);
     }
 
     // -- Helpers --
@@ -330,6 +481,9 @@ public class LayoutCalculatorTests
     static ImmutableArray<VariantModel> MakeVariants(
         params (string Name, ImmutableArray<FieldModel> Params)[] variants) =>
         [.. variants.Select((v, i) => new VariantModel(v.Name, v.Params.ToEquatableArray(), (byte)(i + 1)))];
+
+    static FieldModel ManagedStruct(string name, int size) =>
+        new(name, "Names", "public", IsValueType: true, IsUnmanaged: false, Size: size, Alignment: 8);
 
     static ImmutableArray<FieldModel> MakeFields(
         params (string Name, string Type, bool IsUnmanaged, int Size, int Align)[] fields) =>

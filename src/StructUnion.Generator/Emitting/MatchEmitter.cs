@@ -44,7 +44,7 @@ static class MatchEmitter
             foreach (var variant in model.Variants)
             {
                 var args = string.Join(", ", variant.Parameters.Select(p =>
-                    variant.FieldName(p.Name)));
+                    model.FieldAccess(variant, p)));
                 sb.AppendLine($"Tags.{variant.Name} => {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}),");
             }
             sb.AppendLine("_ => ThrowUnknownTag<TResult>()");
@@ -81,7 +81,7 @@ static class MatchEmitter
                 var args = new List<string> { "state" };
                 for (var i = 0; i < variant.Parameters.Count; i++)
                 {
-                    args.Add(variant.FieldName(variant.Parameters[i].Name));
+                    args.Add(model.FieldAccess(variant, variant.Parameters[i]));
                 }
 
                 sb.AppendLine($"Tags.{variant.Name} => {CSharpIdentifiers.ToCamelCase(variant.Name)}({string.Join(", ", args)}),");
@@ -120,7 +120,7 @@ static class MatchEmitter
                 foreach (var variant in model.Variants)
                 {
                     var args = string.Join(", ", variant.Parameters.Select(p =>
-                        variant.FieldName(p.Name)));
+                        model.FieldAccess(variant, p)));
                     sb.AppendLine($"case Tags.{variant.Name}: {CSharpIdentifiers.ToCamelCase(variant.Name)}({args}); break;");
                 }
                 sb.AppendLine("default: ThrowUnknownTag(); break;");
@@ -156,7 +156,7 @@ static class MatchEmitter
                     var args = new List<string> { "state" };
                     for (var i = 0; i < variant.Parameters.Count; i++)
                     {
-                        args.Add(variant.FieldName(variant.Parameters[i].Name));
+                        args.Add(model.FieldAccess(variant, variant.Parameters[i]));
                     }
 
                     sb.AppendLine($"case Tags.{variant.Name}: {CSharpIdentifiers.ToCamelCase(variant.Name)}({string.Join(", ", args)}); break;");

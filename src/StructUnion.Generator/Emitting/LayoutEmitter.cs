@@ -8,11 +8,13 @@ static class LayoutEmitter
 {
     public static void Emit(SourceBuilder sb, UnionModel model)
     {
-        if (model.Layout != LayoutStrategy.Explicit)
+        if (model.Layout == LayoutStrategy.Auto)
         {
             return;
         }
 
+        // Under Hybrid the table covers the storage struct; the fields beside it are listed apart.
+        var hybrid = model.Layout == LayoutStrategy.Hybrid;
         var totalSize = model.TotalSize;
         var structAlignment = model.StructAlignment;
 
@@ -29,7 +31,7 @@ static class LayoutEmitter
         };
 
         // Common fields
-        for (var i = 0; i < model.CommonFields.Count; i++)
+        for (var i = 0; i < model.CommonFields.Count && !hybrid; i++)
         {
             var field = model.CommonFields[i];
             var offset = LayoutCalculator.ComputeCommonFieldOffset(
@@ -43,6 +45,11 @@ static class LayoutEmitter
             for (var j = 0; j < variant.Parameters.Count; j++)
             {
                 var param = variant.Parameters[j];
+                if (hybrid && !model.IsInStorage(param))
+                {
+                    continue;
+                }
+
                 var offset = LayoutCalculator.ComputeVariantFieldOffset(
                     variant, j, model.RefZoneOffset, model.ValueZoneOffset);
                 fields.Add((offset, offset + param.Size, param.Name, ShortTypeName(param.TypeFullyQualified), param.Size, $"({variant.Name})"));
@@ -84,7 +91,17 @@ static class LayoutEmitter
 
         // ── Emit header and layout ──
         var paddingPart = totalPadding > 0 ? $" \u00b7 {totalPadding}B padding" : "";
-        sb.AppendLine($"/// <para><b>{totalSize} bytes</b> \u00b7 align {structAlignment}{paddingPart}</para>");
+        if (hybrid)
+        {
+            var estimate = model.EstimatedSize >= 0 ? $"~{model.EstimatedSize} bytes" : "Size set at runtime";
+            sb.AppendLine($"/// <para><b>{estimate}</b> \u00b7 the runtime places fields that cannot share memory</para>");
+            sb.AppendLine($"/// <para><c>{UnionModel.StorageField}</c>: <b>{totalSize} bytes</b> \u00b7 align {structAlignment}{paddingPart}</para>");
+        }
+        else
+        {
+            sb.AppendLine($"/// <para><b>{totalSize} bytes</b> \u00b7 align {structAlignment}{paddingPart}</para>");
+        }
+
         sb.AppendLine("/// <code>");
 
         foreach (var line in layoutLines)
@@ -93,6 +110,11 @@ static class LayoutEmitter
         }
 
         sb.AppendLine("/// </code>");
+
+        if (hybrid)
+        {
+            EmitRuntimePlacedFields(sb, model);
+        }
 
         // ── Variant size table ──
         sb.AppendLine("/// <para><b>Variants</b></para>");
@@ -110,11 +132,46 @@ static class LayoutEmitter
         foreach (var variant in model.Variants)
         {
             var payload = ComputeVariantPayload(variant);
-            sb.AppendLine($"/// {variant.Name.PadRight(maxNameLen)}  {payload,3}B");
+            var payloadText = payload >= 0 ? payload.ToString() : "?";
+            sb.AppendLine($"/// {variant.Name.PadRight(maxNameLen)}  {payloadText,3}B");
         }
 
         sb.AppendLine("/// </code>");
         sb.AppendLine("/// </remarks>");
+    }
+
+    /// <summary>
+    /// Lists the fields a Hybrid union holds beside its storage struct. The runtime chooses their
+    /// offsets, so only their sizes are known, and those only as far as the generator can see.
+    /// </summary>
+    static void EmitRuntimePlacedFields(SourceBuilder sb, UnionModel model)
+    {
+        sb.AppendLine("/// <para><b>Placed by the runtime</b></para>");
+        sb.AppendLine("/// <code>");
+
+        foreach (var field in model.CommonFields)
+        {
+            sb.AppendLine($"/// {FormatUnplacedLine(field, "(common)")}");
+        }
+
+        foreach (var variant in model.Variants)
+        {
+            foreach (var param in variant.Parameters)
+            {
+                if (!model.IsInStorage(param))
+                {
+                    sb.AppendLine($"/// {FormatUnplacedLine(param, $"({variant.Name})")}");
+                }
+            }
+        }
+
+        sb.AppendLine("/// </code>");
+    }
+
+    static string FormatUnplacedLine(FieldModel field, string label)
+    {
+        var sizeStr = field.Size >= 0 ? $"{field.Size}B" : "?B";
+        return $"{field.Name,-12} {ShortTypeName(field.TypeFullyQualified),-10} {sizeStr,4}  {label}";
     }
 
     static string FormatLine(
@@ -194,6 +251,11 @@ static class LayoutEmitter
         var pos = 0;
         foreach (var param in variant.Parameters)
         {
+            if (param.Size < 0 || param.Alignment < 0)
+            {
+                return -1;
+            }
+
             pos = TypeClassifier.Align(pos, param.Alignment);
             pos += param.Size;
         }

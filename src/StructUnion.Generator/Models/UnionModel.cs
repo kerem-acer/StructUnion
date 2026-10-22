@@ -1,4 +1,5 @@
 using StructUnion.Generator.Infrastructure;
+using StructUnion.Generator.Parsing;
 
 namespace StructUnion.Generator.Models;
 
@@ -35,11 +36,33 @@ readonly record struct UnionModel(
     string TemplateTypeKeyword = "",
     bool GenerateEquality = true,
     UserEqualityMembers UserEquality = default,
-    bool AllowParameterlessConstructor = false)
+    bool AllowParameterlessConstructor = false,
+    int EstimatedSize = 0)
 {
+    /// <summary>The field holding the nested storage struct under <see cref="LayoutStrategy.Hybrid"/>.</summary>
+    public const string StorageField = "_storage";
+
+    /// <summary>The nested explicit-layout struct under <see cref="LayoutStrategy.Hybrid"/>.</summary>
+    public const string StorageType = "__Storage";
+
     public bool HasCommonFields => CommonFields.Count > 0;
 
-    public string TagField => "_tag";
+    /// <summary>The expression that reads the tag; under Hybrid layout the tag sits in the storage struct.</summary>
+    public string TagField => Layout == LayoutStrategy.Hybrid ? $"{StorageField}._tag" : "_tag";
+
+    /// <summary>
+    /// True if a case field lives in the nested storage struct rather than in the union itself.
+    /// </summary>
+    public bool IsInStorage(FieldModel param) =>
+        Layout == LayoutStrategy.Hybrid && LayoutCalculator.CanOverlap(param);
+
+    /// <summary>
+    /// The expression that reads a case field's backing field, through the storage struct when it lives there.
+    /// </summary>
+    public string FieldAccess(VariantModel variant, FieldModel param) =>
+        IsInStorage(param)
+            ? $"{StorageField}.{variant.FieldName(param.Name)}"
+            : variant.FieldName(param.Name);
 
     /// <summary>
     /// True if the nested <c>Cases</c> class is emitted. Native union mode needs it for its case

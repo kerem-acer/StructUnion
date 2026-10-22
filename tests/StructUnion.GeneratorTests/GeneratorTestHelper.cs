@@ -129,6 +129,41 @@ public static class GeneratorTestHelper
         return image.ToArray();
     }
 
+    /// <summary>
+    /// Runs the generator over <paramref name="source"/> with <paramref name="library"/> — itself
+    /// generated and compiled — as a referenced assembly, and returns the run plus the compiler
+    /// errors in the result.
+    /// </summary>
+    /// <remarks>
+    /// The library reaches the generator as metadata, the way a union from another project does:
+    /// its fields are visible, their <c>FieldOffset</c>s are not.
+    /// </remarks>
+    public static (GeneratorDriverRunResult Result, ImmutableArray<Diagnostic> Errors) RunWithLibrary(
+        string source,
+        string library)
+    {
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+
+        var libraryCompilation = BuildCompilation(library, includeUnionRuntime: false, parseOptions, "TestLibrary");
+        CreateDriver(parseOptions).RunGeneratorsAndUpdateCompilation(libraryCompilation, out var generatedLibrary, out _);
+        using var image = new MemoryStream();
+        var emitted = generatedLibrary.Emit(image);
+        if (!emitted.Success)
+        {
+            throw new InvalidOperationException(
+                "Library emit failed:" + Environment.NewLine
+                + string.Join(Environment.NewLine, emitted.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error)));
+        }
+
+        var compilation = BuildCompilation(source, includeUnionRuntime: false, parseOptions)
+            .AddReferences(MetadataReference.CreateFromImage(image.ToArray()));
+        var driver = CreateDriver(parseOptions).RunGeneratorsAndUpdateCompilation(compilation, out var updated, out _);
+
+        return (
+            driver.GetRunResult(),
+            updated.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToImmutableArray());
+    }
+
     static CSharpGeneratorDriver CreateDriver(CSharpParseOptions parseOptions) =>
         CSharpGeneratorDriver.Create(
             [new StructUnionGenerator().AsSourceGenerator()],
@@ -137,7 +172,8 @@ public static class GeneratorTestHelper
     static CSharpCompilation BuildCompilation(
         string source,
         bool includeUnionRuntime,
-        CSharpParseOptions parseOptions)
+        CSharpParseOptions parseOptions,
+        string assemblyName = "TestAssembly")
     {
         var syntaxTrees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(source, parseOptions) };
         if (includeUnionRuntime)
@@ -165,7 +201,7 @@ public static class GeneratorTestHelper
         }
 
         return CSharpCompilation.Create(
-            assemblyName: "TestAssembly",
+            assemblyName: assemblyName,
             syntaxTrees: syntaxTrees,
             references: references,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));

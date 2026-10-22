@@ -57,7 +57,7 @@ static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor LargeStructWarning = new(
         id: "SU0007",
         title: "Large struct union",
-        messageFormat: "The struct '{0}' has an estimated payload of {1} bytes; consider a class-based union for types exceeding 64 bytes",
+        messageFormat: "The struct '{0}' has an estimated size of {1} bytes; consider a class-based union for types exceeding 64 bytes",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

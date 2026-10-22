@@ -165,7 +165,7 @@ static class NativeUnionEmitter
                         continue;
                     }
 
-                    var args = string.Join(", ", variant.Parameters.Select(p => variant.FieldName(p.Name)));
+                    var args = string.Join(", ", variant.Parameters.Select(p => model.FieldAccess(variant, p)));
                     sb.AppendLine($"case Tags.{variant.Name}: return new Cases.{variant.Name}({args});");
                 }
 
@@ -192,7 +192,7 @@ static class NativeUnionEmitter
                 }
                 else
                 {
-                    var args = string.Join(", ", variant.Parameters.Select(p => variant.FieldName(p.Name)));
+                    var args = string.Join(", ", variant.Parameters.Select(p => model.FieldAccess(variant, p)));
                     sb.AppendLine($"value = new Cases.{variant.Name}({args});");
                 }
 
