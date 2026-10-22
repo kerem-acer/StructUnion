@@ -43,6 +43,23 @@ static class RoslynExtensions
         return result.ToImmutable().ToEquatableArray();
     }
 
+    /// <summary>
+    /// True if the type or any type containing it has type parameters. The CLR treats a type nested
+    /// in a generic type as generic itself, and refuses explicit layout on either.
+    /// </summary>
+    public static bool IsInGenericContext(this INamedTypeSymbol symbol)
+    {
+        for (var type = symbol; type is not null; type = type.ContainingType)
+        {
+            if (type.TypeParameters.Length > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static EquatableArray<TypeParameterModel> GetTypeParameterModels(this INamedTypeSymbol symbol)
     {
         var result = ImmutableArray.CreateBuilder<TypeParameterModel>();

@@ -65,7 +65,7 @@ static class DisposableEmitter
                         {
                             if (param.IsDisposable)
                             {
-                                EmitFieldSyncDispose(sb, variant, param);
+                                EmitFieldSyncDispose(sb, model, variant, param);
                             }
                         }
                         sb.AppendLine("break;");
@@ -98,11 +98,11 @@ static class DisposableEmitter
                         {
                             if (param.IsAsyncDisposable)
                             {
-                                EmitFieldAsyncDispose(sb, variant, param);
+                                EmitFieldAsyncDispose(sb, model, variant, param);
                             }
                             else if (param.IsDisposable)
                             {
-                                EmitFieldSyncDispose(sb, variant, param);
+                                EmitFieldSyncDispose(sb, model, variant, param);
                             }
                         }
                         sb.AppendLine("break;");
@@ -112,9 +112,9 @@ static class DisposableEmitter
         }
     }
 
-    static void EmitFieldSyncDispose(SourceBuilder sb, VariantModel variant, FieldModel param)
+    static void EmitFieldSyncDispose(SourceBuilder sb, UnionModel model, VariantModel variant, FieldModel param)
     {
-        var field = variant.FieldName(param.Name);
+        var field = model.FieldAccess(variant, param);
         if (param.IsValueType)
         {
             sb.AppendLine($"{field}.Dispose();");
@@ -125,9 +125,9 @@ static class DisposableEmitter
         }
     }
 
-    static void EmitFieldAsyncDispose(SourceBuilder sb, VariantModel variant, FieldModel param)
+    static void EmitFieldAsyncDispose(SourceBuilder sb, UnionModel model, VariantModel variant, FieldModel param)
     {
-        var field = variant.FieldName(param.Name);
+        var field = model.FieldAccess(variant, param);
         if (param.IsValueType)
         {
             sb.AppendLine($"await {field}.DisposeAsync().ConfigureAwait(false);");
@@ -144,7 +144,7 @@ static class DisposableEmitter
         if (variant.Parameters.Count == 1)
         {
             var param = variant.Parameters[0];
-            var field = variant.FieldName(param.Name);
+            var field = model.FieldAccess(variant, param);
             sb.AppendLine($"/// <summary>Removes ownership of the {variant.Name} payload from <paramref name=\"self\"/> and returns it. Sets <paramref name=\"self\"/> to default so subsequent disposal is a no-op. Throws if the active variant is not {variant.Name}.</summary>");
             sb.AppendLine($"public static {param.TypeFullyQualified} Take{variant.Name}(ref {model.TypeNameWithParameters} self)");
             using (sb.Block())
@@ -168,7 +168,7 @@ static class DisposableEmitter
             sb.AppendLine($"if (self.{model.TagField} != Tags.{variant.Name}) ThrowInvalidCase(nameof({variant.Name}));");
             foreach (var param in variant.Parameters)
             {
-                var field = variant.FieldName(param.Name);
+                var field = model.FieldAccess(variant, param);
                 sb.AppendLine($"{CSharpIdentifiers.EscapeKeyword(param.Name)} = self.{field};");
             }
             sb.AppendLine("self = default;");
@@ -180,7 +180,7 @@ static class DisposableEmitter
         if (variant.Parameters.Count == 1)
         {
             var param = variant.Parameters[0];
-            var field = variant.FieldName(param.Name);
+            var field = model.FieldAccess(variant, param);
             sb.AppendLine($"/// <summary>If the active variant is {variant.Name}, removes ownership of its payload, writes it to <paramref name=\"value\"/>, sets <paramref name=\"self\"/> to default, and returns true.</summary>");
             sb.AppendLine($"public static bool TryTake{variant.Name}(ref {model.TypeNameWithParameters} self, out {param.TypeFullyQualified} value)");
             using (sb.Block())
@@ -211,7 +211,7 @@ static class DisposableEmitter
             {
                 foreach (var param in variant.Parameters)
                 {
-                    var field = variant.FieldName(param.Name);
+                    var field = model.FieldAccess(variant, param);
                     sb.AppendLine($"{CSharpIdentifiers.EscapeKeyword(param.Name)} = self.{field};");
                 }
                 sb.AppendLine("self = default;");

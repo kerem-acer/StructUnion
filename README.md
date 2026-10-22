@@ -151,7 +151,7 @@ Option<int> opt = Option<int>.Some(42);
 Result<string, Exception> result = Result<string, Exception>.Ok("hello");
 ```
 
-Generic unions use sequential (`Auto`) layout since type sizes are unknown at generation time. Constraints (`where T : struct`, `where T : class`, etc.) are preserved on the generated struct.
+Generic unions use sequential (`Auto`) layout: the CLR refuses explicit layout on any generic type, including a union nested in a generic class. Constraints (`where T : struct`, `where T : class`, etc.) are preserved on the generated struct.
 
 ### Record Template API
 
@@ -577,7 +577,7 @@ Set project-wide defaults with `[StructUnionOptions]`. Per-type attributes overr
 | SU0004 | Error | Variant method must return the containing struct type |
 | SU0005 | Error | `ref`/`in`/`out` parameters are not supported on variants |
 | SU0006 | Error | Too many variants (maximum 255) |
-| SU0007 | Warning | Large struct payload (consider a class-based union above 64 bytes) |
+| SU0007 | Warning | Large struct: the generated layout is estimated above 64 bytes (consider a class-based union) |
 | SU0008 | Error | Duplicate variant names (case-insensitive) |
 | SU0009 | Error | Tag property name conflicts with a variant or common field name |
 | SU0010 | Error | `GeneratedName` and `TemplateSuffix` cannot both be set |
@@ -603,7 +603,26 @@ The generator produces structs with `[StructLayout(LayoutKind.Explicit)]` where 
 
 For example, `Shape` with three double-based variants occupies just 24 bytes: 1 byte tag + 7 bytes padding + 16 bytes payload (2 doubles).
 
-When a field cannot sit at an explicit offset, the generator falls back to sequential (`Auto`) layout. That happens for unknowable sizes (generic type parameters), managed value types (e.g. `ValueTuple<string, int>`, whose GC references the CLR cannot track through overlapping fields), and `ref struct` fields (a byref has no representation at a fixed offset). The generated API is identical; only the internal memory strategy differs.
+Some fields cannot sit at an explicit offset:
+
+- **Value types holding references** (e.g. `ValueTuple<string, int>`, or another union whose cases hold references). The runtime decides where their references go, so nothing may overlap them.
+- **Types the generator cannot see yet**, such as the struct a record template generates in the same compilation.
+
+Such fields do not cost the rest of the union its overlap. The union stays sequential and holds them directly, where the runtime places them; the tag and every field that can overlap move into a nested explicit-layout struct, `_storage`:
+
+```csharp
+public readonly partial struct Mixed          // sequential
+{
+    private readonly __Storage _storage;      // [StructLayout(Explicit)]: the string cases share one slot
+    private readonly Names _e_names;          // placed by the runtime
+}
+```
+
+The layout comment on the generated struct shows `_storage` exactly and the total as an estimate.
+
+Generic unions and unions with `ref struct` fields (a byref has no representation at a fixed offset) use sequential (`Auto`) layout throughout. The generated API is identical in every case; only the internal memory strategy differs.
+
+A union declared in the same compilation is sized from its cases, since its fields are generated in the same run; one from a referenced assembly is sized by rebuilding its cases from its fields. `SU0007` reports the size of the layout that is actually generated: the explicit size, or for a sequential union the sum of every field.
 
 ## Requirements
 

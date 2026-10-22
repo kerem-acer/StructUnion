@@ -296,6 +296,7 @@ static class UnionParser
             perTypeAllowParameterlessConstructor,
             symbol.GetUserEqualityMembers(),
             symbol.IsRefLikeType,
+            symbol.IsInGenericContext(),
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -395,6 +396,7 @@ static class UnionParser
             UserEquality: default,
             // A record or class cannot hold a ref-like member, so a template can never need `ref`.
             IsRefLikeDeclaration: false,
+            symbol.IsInGenericContext(),
             DiagnosticLocation.From(location));
 
         return new TransformResult(extract, diagnostics.ToImmutable().ToEquatableArray());
@@ -417,15 +419,7 @@ static class UnionParser
         var variants = data.Variants.AsImmutableArray();
         var commonFields = data.CommonFields.AsImmutableArray();
 
-        var layout = LayoutCalculator.DetermineStrategy(variants, commonFields);
-        var (refZoneOffset, valueZoneOffset) = layout == LayoutStrategy.Explicit ? LayoutCalculator.ComputeZoneOffsets(commonFields, variants) : (0, 0);
-        var (totalSize, structAlignment) = layout == LayoutStrategy.Explicit ?
-            LayoutCalculator.ComputeTotalSize(
-                variants,
-                commonFields,
-                refZoneOffset,
-                valueZoneOffset) :
-            (0, 0);
+        var plan = LayoutCalculator.Plan(variants, commonFields, data.IsInGenericContext);
 
         return new UnionModel(
             data.Namespace,
@@ -435,12 +429,12 @@ static class UnionParser
             data.TypeParameters,
             data.Variants,
             data.CommonFields,
-            layout,
+            plan.Strategy,
             enableImplicit,
-            refZoneOffset,
-            valueZoneOffset,
-            totalSize,
-            structAlignment,
+            plan.RefZoneOffset,
+            plan.ValueZoneOffset,
+            plan.TotalSize,
+            plan.StructAlignment,
             data.Mode,
             tagPropertyName,
             nestedAccessors,
@@ -451,7 +445,8 @@ static class UnionParser
             data.TemplateTypeKeyword,
             generateEquality,
             data.UserEquality,
-            allowParameterlessConstructor);
+            allowParameterlessConstructor,
+            plan.EstimatedSize);
     }
 
     static void ReportDisposableWithoutOptIn(
@@ -830,43 +825,15 @@ static class UnionParser
         DiagnosticLocation location,
         ImmutableArray<DiagnosticInfo>.Builder diagnostics)
     {
-        var commonSize = 0;
-        foreach (var field in model.CommonFields)
-        {
-            if (field.Size < 0)
-            {
-                return; // unknowable, skip check
-            }
-
-            commonSize += field.Size;
-        }
-
-        var maxPayload = 0;
-        foreach (var variant in model.Variants)
-        {
-            var payload = 0;
-            foreach (var param in variant.Parameters)
-            {
-                if (param.Size < 0)
-                {
-                    return; // unknowable, skip check
-                }
-
-                payload += param.Size;
-            }
-
-            maxPayload = Math.Max(maxPayload, payload);
-        }
-
-        var totalPayload = commonSize + maxPayload;
-        if (totalPayload > LargeStructThreshold)
+        // -1 when a field's size is unknowable (a type parameter, or a type not generated yet).
+        if (model.EstimatedSize > LargeStructThreshold)
         {
             diagnostics.Add(
                 DiagnosticInfo.Create(
                     DiagnosticDescriptors.LargeStructWarning,
                     location,
                     model.Name,
-                    totalPayload.ToString()));
+                    model.EstimatedSize.ToString()));
         }
     }
 
@@ -961,7 +928,7 @@ static class UnionParser
 
     static FieldModel CreateFieldModel(string name, ITypeSymbol type, Accessibility access)
     {
-        var (fqn, size, alignment) = TypeClassifier.Classify(type);
+        var (fqn, size, alignment, holdsReferences) = TypeClassifier.Classify(type);
         var (sync, asyncDisp) = type.ClassifyDisposable();
 
         // A type parameter declared `allows ref struct` is ref-like for every purpose that matters
@@ -978,7 +945,9 @@ static class UnionParser
             fqn,
             access.ToAccessibilityString(),
             type.IsValueType,
-            type.IsUnmanagedType,
+            // Roslyn cannot see the fields a generator adds, so a union declared in this compilation
+            // looks unmanaged to it even when its cases hold references.
+            type.IsUnmanagedType && !holdsReferences,
             size,
             alignment,
             sync,

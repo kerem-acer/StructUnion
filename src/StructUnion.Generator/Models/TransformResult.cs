@@ -41,6 +41,8 @@ readonly record struct TypeExtract(
     // `ref` on any of the user's partial declarations counts. Always false in template mode, where
     // the generated struct has no user-written declaration.
     bool IsRefLikeDeclaration,
+    // True if the type or a type containing it is generic, which rules out explicit layout.
+    bool IsInGenericContext,
     // Serialized location for deferred diagnostics
     DiagnosticLocation Location);
 

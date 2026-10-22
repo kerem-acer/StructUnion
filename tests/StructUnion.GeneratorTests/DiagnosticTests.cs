@@ -850,7 +850,7 @@ public class DiagnosticTests
     [Test]
     public async Task ExactlyAtThreshold_64Bytes_DoesNotReportSU0007()
     {
-        // 8 doubles = 64 bytes = exactly at threshold, should NOT warn
+        // tag + 7 padding + 7 doubles = 64 bytes = exactly at threshold, should NOT warn
         var source = """
             using StructUnion;
 
@@ -859,7 +859,7 @@ public class DiagnosticTests
             {
                 public static partial AtThreshold A(
                     double f1, double f2, double f3, double f4,
-                    double f5, double f6, double f7, double f8);
+                    double f5, double f6, double f7);
             }
             """;
 
