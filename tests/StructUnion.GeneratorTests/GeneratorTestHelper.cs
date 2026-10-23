@@ -18,6 +18,7 @@ public static class GeneratorTestHelper
     /// doubles as a regression test for the documented polyfill story.
     /// </remarks>
     public const string UnionRuntimePrelude = """
+        #nullable enable
         namespace System.Runtime.CompilerServices
         {
             [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
@@ -98,6 +99,41 @@ public static class GeneratorTestHelper
         throw new InvalidOperationException(
             $"Generated code did not compile ({errors.Length} error(s)):{Environment.NewLine}"
             + string.Join(Environment.NewLine, errors.Select(d => $"  {d.Id}: {d.GetMessage()} @ {d.Location.GetLineSpan()}")));
+    }
+
+    /// <summary>
+    /// Runs the generator and returns the compiler warnings in the result.
+    /// </summary>
+    /// <remarks>
+    /// For defects that compile but are still wrong, such as a generated partial implementation
+    /// whose nullability does not match its declaration (CS8611). The test compilation leaves the
+    /// nullable context off, so a source that needs it must open with <c>#nullable enable</c>.
+    /// Throws when the generator produced nothing: a source it rejects has no generated code to
+    /// warn about, and an empty result would pass for a clean one.
+    /// </remarks>
+    public static ImmutableArray<Diagnostic> GetGeneratedCompilationWarnings(
+        string source,
+        bool includeUnionRuntime = false)
+    {
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+
+        var driver = CreateDriver(parseOptions)
+            .RunGeneratorsAndUpdateCompilation(
+                BuildCompilation(source, includeUnionRuntime, parseOptions),
+                out var updated,
+                out _);
+
+        var result = driver.GetRunResult();
+        if (result.GeneratedTrees.IsEmpty)
+        {
+            throw new InvalidOperationException(
+                "The generator produced no source:" + Environment.NewLine
+                + string.Join(Environment.NewLine, result.Diagnostics));
+        }
+
+        return updated.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Warning)
+            .ToImmutableArray();
     }
 
     /// <summary>

@@ -928,7 +928,7 @@ static class UnionParser
 
     static FieldModel CreateFieldModel(string name, ITypeSymbol type, Accessibility access)
     {
-        var (fqn, size, alignment, holdsReferences) = TypeClassifier.Classify(type);
+        var (fqn, unannotatedFqn, size, alignment, holdsReferences) = TypeClassifier.Classify(type);
         var (sync, asyncDisp) = type.ClassifyDisposable();
 
         // A type parameter declared `allows ref struct` is ref-like for every purpose that matters
@@ -955,6 +955,7 @@ static class UnionParser
             isRefLike,
             eqOperator,
             equatableSelf,
-            overridesToString);
+            overridesToString,
+            unannotatedFqn);
     }
 }

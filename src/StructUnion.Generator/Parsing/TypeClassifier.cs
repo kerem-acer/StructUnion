@@ -43,18 +43,36 @@ static class TypeClassifier
     static readonly TypeShape Unknown = new(-1, -1, false);
 
     /// <summary>
-    /// Returns (fqn, size, alignment, holds references) in a single pass, calling ToDisplayString only once.
+    /// <see cref="SymbolDisplayFormat.FullyQualifiedFormat"/> plus the <c>?</c> of a nullable
+    /// reference type, which that format leaves out.
+    /// </summary>
+    static readonly SymbolDisplayFormat FullyQualifiedAnnotatedFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
+    /// <summary>
+    /// Returns the type's name with and without its nullable reference annotations, plus its size,
+    /// alignment and whether it holds references, in a single pass.
     /// Use this for top-level field classification to avoid redundant Roslyn calls.
     /// </summary>
     /// <remarks>
-    /// <c>HoldsReferences</c> can be true where Roslyn reports <c>IsUnmanagedType</c>: a union declared
-    /// in this compilation has no fields yet as far as Roslyn knows, whatever its cases carry.
+    /// <para><c>Fqn</c> is the type as written (<c>string?</c>), for every place generated code
+    /// names it. <c>UnannotatedFqn</c> (<c>string</c>) is the type the compiler sees once
+    /// annotations are set aside, for telling types apart.</para>
+    /// <para><c>HoldsReferences</c> can be true where Roslyn reports <c>IsUnmanagedType</c>: a union
+    /// declared in this compilation has no fields yet as far as Roslyn knows, whatever its cases
+    /// carry.</para>
     /// </remarks>
-    public static (string Fqn, int Size, int Alignment, bool HoldsReferences) Classify(ITypeSymbol type)
+    public static (string Fqn, string UnannotatedFqn, int Size, int Alignment, bool HoldsReferences) Classify(ITypeSymbol type)
     {
-        var fqn = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var shape = ComputeShape(type, fqn, 0);
-        return (fqn, shape.Size, shape.Alignment, shape.HoldsReferences);
+        var unannotatedFqn = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var shape = ComputeShape(type, unannotatedFqn, 0);
+        return (
+            type.ToDisplayString(FullyQualifiedAnnotatedFormat),
+            unannotatedFqn,
+            shape.Size,
+            shape.Alignment,
+            shape.HoldsReferences);
     }
 
     public static int GetSize(ITypeSymbol type) => ComputeShape(type, null, 0).Size;
