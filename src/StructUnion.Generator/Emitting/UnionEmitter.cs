@@ -253,7 +253,9 @@ static class UnionEmitter
             return;
         }
 
-        // Find single-parameter variants with unique types (no LINQ, single pass)
+        // Find single-parameter variants with unique types (no LINQ, single pass). Keyed without
+        // nullable annotations: `string` and `string?` are one parameter type, so a case taking
+        // each would declare the same conversion twice.
         var typeToVariant = new Dictionary<string, VariantModel?>();
         for (var i = 0; i < model.Variants.Count; i++)
         {
@@ -263,7 +265,7 @@ static class UnionEmitter
                 continue;
             }
 
-            var typeName = variant.Parameters[0].TypeFullyQualified;
+            var typeName = variant.Parameters[0].TypeIdentity;
             if (typeToVariant.ContainsKey(typeName))
             {
                 typeToVariant[typeName] = null; // duplicate type — mark as ineligible
@@ -282,7 +284,7 @@ static class UnionEmitter
                 continue;
             }
 
-            sb.AppendLine($"public static implicit operator {model.TypeNameWithParameters}({kvp.Key} value) => {variant.Name}(value);");
+            sb.AppendLine($"public static implicit operator {model.TypeNameWithParameters}({variant.Parameters[0].TypeFullyQualified} value) => {variant.Name}(value);");
             emitted = true;
         }
 

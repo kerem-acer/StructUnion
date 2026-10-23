@@ -17,8 +17,18 @@ readonly record struct FieldModel(
     bool IsRefLike = false,
     bool DeclaresEqualityOperator = false,
     bool ImplementsIEquatableSelf = false,
-    bool OverridesToString = false)
+    bool OverridesToString = false,
+    string? UnannotatedTypeFullyQualified = null)
 {
+    /// <summary>
+    /// The type with its nullable reference annotations removed: <c>string</c> for a
+    /// <c>string?</c> field, which is one type to the compiler. Generated members that overload on
+    /// the field's type must differ in this, not in <see cref="TypeFullyQualified"/>, which keeps
+    /// the annotations so the code it is written into says what the user's declaration says.
+    /// </summary>
+    /// <remarks>Falls back to <see cref="TypeFullyQualified"/> for a model built without it.</remarks>
+    public string TypeIdentity => UnannotatedTypeFullyQualified ?? TypeFullyQualified;
+
     /// <summary>
     /// True if a ref-like field can be compared at all. A ref-like type cannot be a generic type
     /// argument, so <c>EqualityComparer&lt;T&gt;.Default</c> — the fallback for every other type —
